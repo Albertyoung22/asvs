@@ -1,0 +1,16 @@
+pyserial
+flask
+flask-sock
+pygame==2.5.2
+yt-dlp
+edge-tts
+requests
+certifi
+qrcode
+Pillow
+gTTS
+waitress
+deep-translator
+bcrypt
+h11==0.14.0
+wsproto==1.2.0
