@@ -6,33 +6,33 @@ BROADCAST_CACHE = collections.deque(maxlen=10)
 
 """
 
-UDP 隤鮋𨺗?交𤣰蝡荔??急???UI嚚靝??坔�?典??蠘�嚚𨅯?蝡舫??Ｙ崕蝡页?銝滚�撱箏銁蝔见?鋆∴?
+UDP 語音接收端（含桌面 UI｜保留全部原功能｜前端頁面獨立，不內建在程式裡）
 
-- 靽萘?嚗関kinter 獢屸𢒰 UI?�DP ?交𤣰?�TS?�P3/YouTube ?剜𦆮?�??單??柴��䌊?閙?蝔卝��grok嚗�虾?賂?
+- 保留：Tkinter 桌面 UI、UDP 接收、TTS、MP3/YouTube 播放、上傳清單、自動排程、ngrok（可選）
 
-- Web ?�?靘?API嚗?translate嚗éini_translator 瘚�?嚗剹�?send??sendmp3??cmd /state /files /upload /download /delete /timetable/* /schedules/* /logs* /piper/*
+- Web 僅提供 API：/translate（mini_translator 流程）、/send、/sendmp3、/cmd /state /files /upload /download /delete /timetable/* /schedules/* /logs* /piper/*
 
-- ?批遣 Edge TTS ??Piper嚗�洵鈭屸?雿㵪???gTTS ??SAPI5
+- 內建 Edge TTS → Piper（第二順位）→ gTTS → SAPI5
 
-- UI ?�??�瘙�??湛?銝餅綉?啜��?蝔卝��?獢?銝𠰴�?�䌊閮�遙??4 ?�?嚗�?閫�蝬剜?嚗?
-
-
-
- ?啣??�矽?湛?
-
-1) 頛詨� YouTube ???敺䕘??唾??�誑?�蔣?�?憿?mp3?滢?摮睃銁 UPLOADS嚗�?銝𠰴� MP3 ?諹??坔冗嚗㚁?銝血?閰脫??剜𦆮嚗�??滚⏛?歹???
-
-2) ?滨垢蝬脣???ngrok URL ??QRCode ?寧�敶�枂?𣬚崕蝡见?閬𣇉??漤＊蝷綽??怨?鋆質??见??厰?嚗剹�?
+- UI 與原需求一致：主控台、排程、檔案/上傳、自訂任務 4 分頁（外觀維持）
 
 
 
-?笔?嚗?
+ 新增與調整：
+
+1) 輸入 YouTube 連結後，音訊會以「影片標題.mp3」保存在 UPLOADS（與上傳 MP3 同資料夾），並從該檔播放（不再刪除）。
+
+2) 前端網址與 ngrok URL 的 QRCode 改為彈出「獨立小視窗」顯示（含複製與開啟按鈕）。
+
+
+
+啟動：
 
   python udp_receiver_with_ui_piper.py
 
 
 
-憒�?閬�? EXE嚗朞?蝣箔???mp3?�ogo.ico?�??舫�嚗总fmpeg.exe ?曉??桅??㚚�誯? PyInstaller datas 撣嗅�??
+如果要包 EXE：請確保把 mp3、logo.ico、（可選）ffmpeg.exe 放同目錄或透過 PyInstaller datas 帶入。
 
 """
 
@@ -41,37 +41,39 @@ UDP 隤鮋𨺗?交𤣰蝡荔??急???UI嚚靝??坔�?典??蠘�嚚𨅯?蝡舫??
 
 # ===============================
 
-# == [ANCHOR] 雿輻鍂?�虾隤踵㟲?�憛?==
+# == [ANCHOR] 使用者可調整區塊 ==
 
 # ===============================
 
-USE_NGROK = False           # ?喲???ngrok 撠望㺿 False
+USE_NGROK = False           # 想關掉 ngrok 就改 False
 
-USE_EDGE_TTS = True         # ?臬炏雿輻鍂 Edge TTS (??False ?�凒?亥歲?𠬍?雿輻鍂 Piper/gTTS)
+USE_EDGE_TTS = True         # 是否使用 Edge TTS (若 False 則直接跳過，使用 Piper/gTTS)
 
-USE_AI_GENERATION = True    # ?臬炏?毺鍂 AI 撱?偘蝔輻???(??False ?�??�摰㕑? Ollama)
+USE_AI_GENERATION = True    # 是否啟用 AI 廣播稿生成 (若 False 則不需安裝 Ollama)
 
-USE_EDGE_TTS = True         # ?臬炏雿輻鍂 Edge TTS (??False ?凒?亥歲?𠬍?雿輻鍂 Piper/gTTS)
+HTTP_PORT = 5050            # 改為 5050 以避開舊進程佔用
 
-USE_AI_GENERATION = True    # ?臬炏?毺鍂 AI 撱?偘蝔輻???(??False ???摰㕑? Ollama)
+PORT = 8888                 # UDP 監聽埠
 
-TIMETABLE_SCAN_USE_OLLAMA = HAS_OLLAMA     # ?臬炏雿輻鍂 Ollama (擐? HAS_OLLAMA)
-HTTP_PORT = int(os.environ.get("PORT", 5050))
-IS_RENDER = os.environ.get("RENDER") == "true" or os.environ.get("PORT") is not None
-IS_HEADLESS = IS_RENDER or not _HAS_TKINTER
+YT_AUTO_CLOSE_MIN = 30      # 全螢幕逾時自關閉（分鐘）←保留欄位
 
-DISABLE_WEB = False         # True ?????? Flask + ngrok嚗??祆?嚗?)
-DISABLE_UDP = False         # True ?????? UDP 隞乩? (?曉??摰? Ollama)/gTTS)
-FIRE_ALARM_PORT = "COM5"    # ??皜?COM ?? (渚?: "COM3")
-FIRE_ALARM_PIN = "CTS"      # ?菜葫?喃?: CTS ??DSR
+TIMETABLE_SCAN_SEC = 5      # 排程掃描週期（秒）
 
-DISABLE_WEB = False         # True ???笔? Flask + ngrok嚗??祆?嚗?
+DISABLE_UDP = False         # True 時不啟動 UDP 接收緒（純本機）
+
+DISABLE_WEB = False         # True 時不啟動 Flask + ngrok（純本機）
+
+# [NEW] Fire Alarm Hardware Config
+FIRE_ALARM_PORT = None      # 火災訊號輸入埠 (若設為 None 則不啟用)
+FIRE_ALARM_PIN = "CTS"      # 偵測腳位: CTS 或 DSR
+
+DISABLE_WEB = False         # True 時不啟動 Flask + ngrok（純本機）
 
 # =======================================
 
 
 
-# ---- ?望�批𥲤?伐??嫣噶 PyInstaller嚗?---
+# ---- 隱性匯入（方便 PyInstaller）----
 
 import sys as _sys
 import serial, serial.tools.list_ports  # noqa: F401
@@ -99,7 +101,7 @@ except ImportError as e:
 
 # ===============================
 
-# == [ANCHOR] 璅蹱??臬�/?典?撌亙� ==
+# == [ANCHOR] 標準匯入/全域工具 ==
 
 # ===============================
 
@@ -110,14 +112,10 @@ import ssl
 import time
 import json
 import threading
-from datetime import datetime, timedelta, timezone
-
-def get_now():
-    """?𧼮�?桀??�蝱?埈???(UTC+8)"""
-    return datetime.now(timezone(timedelta(hours=8)))
+from datetime import datetime, timedelta
 
 # ==========================================================
-#  敹恍��?隞?-> ?祆??單??惩?銵?(?湔𦻖?剜𦆮,銝滩粥 audio_proxy)
+#  快速指令 -> 本機音檔映射表 (直接播放,不走 audio_proxy)
 # ==========================================================
 CMD_SOUND_TABLE = {
     "Bell:ClassStart": "static/audio/ClassStart.mp3",
@@ -207,7 +205,7 @@ def _global_excepthook(exc_type, exc_value, exc_traceback):
         import traceback
         err_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
         with open("startup_crash.log", "w", encoding="utf-8") as f:
-            f.write(f"Timestamp: {get_now()}\n")
+            f.write(f"Timestamp: {datetime.now()}\n")
             f.write("Global Crash:\n")
             f.write(err_msg)
     except: pass
@@ -257,7 +255,7 @@ if getattr(sys, 'frozen', False):
 
             certifi.where = override_where
             
-            # [CRITICAL] ?游?蝳�鍂 SSL 撽𡑒?隞乩耨敺?Frozen App 銝剔? Edge TTS ????誯?
+            # [CRITICAL] 暴力禁用 SSL 驗證以修復 Frozen App 中的 Edge TTS 連線問題
             try:
                 ssl._create_default_https_context = ssl._create_unverified_context
             except Exception: pass
@@ -326,17 +324,16 @@ _log_boot(f"[SETUP] ssl.get_default_verify_paths() = {ssl.get_default_verify_pat
 
 
 
-# ---- Tkinter嚗𠃑UI ?啣??漤?閬?----
-# Render / Linux ?⊿璅∪?銝?tkinter 銝滢?摰𡁜??剁?雿輻鍂 try/except 靽肽風
+# ---- Tkinter（GUI 環境才需要）----
+# Render / Linux 無頭模式下 tkinter 不一定存在，使用 try/except 保護
 _HAS_TKINTER = False
 try:
-    if IS_HEADLESS: raise ImportError("Forced Headless Mode")
     import socket, tkinter as tk, tkinter.ttk as ttk
     from tkinter import filedialog, messagebox, simpledialog
     from tkinter.scrolledtext import ScrolledText
     _HAS_TKINTER = True
 except Exception:
-    # --- tkinter Stub嚗朞?敺屸𢒰?�芋蝯�惜蝝𡁶?撘讐Ⅳ銝齿? NameError ---
+    # --- tkinter Stub：讓後面的模組層級程式碼不會 NameError ---
     import types as _types, socket
     tk = _types.ModuleType("tk")
     ttk = _types.ModuleType("ttk")
@@ -426,7 +423,7 @@ except Exception:
         def askinteger(*a, **kw): return 0
     filedialog = _FD; messagebox = _MB; simpledialog = _SD
     ScrolledText = _W
-    print("[WARN] tkinter not available ??running in headless / web-only mode")
+    print("[WARN] tkinter not available – running in headless / web-only mode")
 
 import os, sys, time, threading, json, socket, subprocess, re, random, queue, logging, uuid, csv, tempfile, asyncio, requests, ctypes, webbrowser, shutil, atexit, signal, glob
 import secrets, hashlib
@@ -448,7 +445,7 @@ mimetypes.add_type('application/json', '.json')
 
 # ===============================
 
-# == [ANCHOR] Tkinter UI嚗? ?�?嚗?==
+# == [ANCHOR] Tkinter UI（4 分頁） ==
 
 from pathlib import Path
 
@@ -501,7 +498,7 @@ def _save_chime_config():
     except: pass
 
 def _load_voice_config():
-    """敺䂿?蝣�??脩垢頛匧�隤鮋𨺗閮剖?"""
+    """從磁碟或雲端載入語音設定"""
     global voice_rate, voice_volume
     _v_p = os.path.join(DATA_DIR, "voice_config.json")
     try:
@@ -526,7 +523,7 @@ def _load_voice_config():
         print(f"[VOICE] Error loading config: {e}")
 
 def _save_voice_config():
-    """靽嘥?隤鮋𨺗閮剖?銝血?甇亙�?脩垢"""
+    """保存語音設定並同步到雲端"""
     try:
         _v_p = os.path.join(DATA_DIR, "voice_config.json")
         data = {
@@ -540,11 +537,11 @@ def _save_voice_config():
     except: pass
 
 
-# ==== [schedules ?脣? JSON 閫??撌亙�] ====
+# ==== [schedules 防呆 JSON 解析工具] ====
 
 def _ensure_obj(value):
 
-    """?𠰴虾?賣糓 str ??JSON ?�???dict/list嚗𥕦捆敹滩◤摮𦯀葡?硋�甈～�?""
+    """把可能是 str 的 JSON 還原成 dict/list；容忍被字串化兩次。"""
 
     if not isinstance(value, str):
 
@@ -576,7 +573,7 @@ def _ensure_obj(value):
 
 def _get_json_tolerant():
 
-    """?�憭批捆敹滚漲??request 頧㗇? Python ?拐辣??""
+    """最大容忍度把 request 轉成 Python 物件。"""
 
     data = request.get_json(silent=True)
 
@@ -622,7 +619,7 @@ except Exception:
 
 # ===============================
 
-# == [ANCHOR] 蝧餉陌?嘥???==
+# == [ANCHOR] 翻譯初始化 ==
 
 # ===============================
 
@@ -631,7 +628,7 @@ try:
     HAS_DEEPTRANS = True
 except ImportError:
     HAS_DEEPTRANS = False
-    print("[translate] deep_translator ?芸?鋆?)
+    print("[translate] deep_translator 未安裝")
 
 
 
@@ -649,7 +646,7 @@ def _get_server_location():
 
     # Default: Taipei 101
 
-    res = {"lat": 25.0330, "lon": 121.5654, "city": "?啣?撣?, "region": "Taipei City"}
+    res = {"lat": 25.0330, "lon": 121.5654, "city": "台北市", "region": "Taipei City"}
 
     
 
@@ -727,7 +724,7 @@ def _get_weather_report():
 
     # Prefer City, then Region
 
-    loc_name = loc["city"] or loc["region"] or "?啣?撣?
+    loc_name = loc["city"] or loc["region"] or "台北市"
 
 
 
@@ -739,7 +736,7 @@ def _get_weather_report():
 
         r = requests.get(url, timeout=5)
 
-        if r.status_code != 200: return "?⊥??硋?瘞?情鞈�?"
+        if r.status_code != 200: return "無法取得氣象資料"
 
         data = r.json().get("current", {})
 
@@ -753,27 +750,27 @@ def _get_weather_report():
 
         # WMO Weather interpretation
 
-        status = "?湔?"
+        status = "晴朗"
 
-        if code in (1, 2, 3): status = "憭𡁻𤩅"
+        if code in (1, 2, 3): status = "多雲"
 
-        elif code in (45, 48): status = "?厰𧊅"
+        elif code in (45, 48): status = "有霧"
 
-        elif 51 <= code <= 55: status = "瘥𥟇???
+        elif 51 <= code <= 55: status = "毛毛雨"
 
-        elif 56 <= code <= 57: status = "?漤𢂚"
+        elif 56 <= code <= 57: status = "凍雨"
 
-        elif 61 <= code <= 65: status = "銝钅𢂚"
+        elif 61 <= code <= 65: status = "下雨"
 
-        elif 66 <= code <= 67: status = "?圈𢂚"
+        elif 66 <= code <= 67: status = "冰雨"
 
-        elif 71 <= code <= 77: status = "銝钅䪸"
+        elif 71 <= code <= 77: status = "下雪"
 
-        elif 80 <= code <= 82: status = "??𢂚"
+        elif 80 <= code <= 82: status = "陣雨"
 
-        elif 85 <= code <= 86: status = "??䪸"
+        elif 85 <= code <= 86: status = "陣雪"
 
-        elif code >= 95: status = "?琿𢂚"
+        elif code >= 95: status = "雷雨"
 
 
 
@@ -795,19 +792,19 @@ def _get_weather_report():
 
                 if aqi is not None:
 
-                    if aqi <= 50: q_status = "?臬末"
+                    if aqi <= 50: q_status = "良好"
 
-                    elif aqi <= 100: q_status = "?桅�?
+                    elif aqi <= 100: q_status = "普通"
 
-                    elif aqi <= 150: q_status = "撠齿??�?蝢支??亙熒"
+                    elif aqi <= 150: q_status = "對敏感族群不健康"
 
-                    elif aqi <= 200: q_status = "銝滚�摨?
+                    elif aqi <= 200: q_status = "不健康"
 
-                    elif aqi <= 300: q_status = "?𧼮虜銝滚�摨?
+                    elif aqi <= 300: q_status = "非常不健康"
 
-                    else: q_status = "?勗拿"
+                    else: q_status = "危害"
 
-                    aqi_str = f"嚗𣬚征瘞??鞈泯q_status}嚗淾QI?�彍{aqi}"
+                    aqi_str = f"，空氣品質{q_status}，AQI指數{aqi}"
 
         except Exception as e:
 
@@ -815,19 +812,19 @@ def _get_weather_report():
 
         
 
-        now_str = get_now().strftime("%H暺?M??)
+        now_str = datetime.now().strftime("%H點%M分")
 
-        return f"?曉銁?�? {now_str}嚗峕??其?蝵?{loc_name}嚗𣬚𤌍?齿除皞?{temp} 摨佗??詨?瞈訫漲 {humid}%嚗�予瘞??瘜�?{status}{aqi_str}??
+        return f"現在時間 {now_str}，所在位置 {loc_name}，目前氣溫 {temp} 度，相對濕度 {humid}%，天氣狀況：{status}{aqi_str}。"
 
     except Exception as e:
 
         print("Weather error:", e)
 
-        return "瘞?情鞈�?霈�?硋仃??
+        return "氣象資料讀取失敗"
 
 
 
-# ---- qrcode嚗�𥅾?∪?隞交?蝷箔誨?選?----
+# ---- qrcode（若無則以提示代替）----
 
 try:
 
@@ -845,7 +842,7 @@ except Exception:
 
 # ===============================
 
-# == [ANCHOR] 頝臬??�??坔冗 ==
+# == [ANCHOR] 路徑與資料夾 ==
 
 # ===============================
 
@@ -1325,7 +1322,7 @@ def api_ai_script():
     """Call Ollama Gemma 2 (2B) to generate broadcast script."""
     # Check config first, fallback to global constant if key missing
     if not config.get("use_ai_generation", USE_AI_GENERATION):
-        return jsonify(ok=False, error="AI ?�??蠘�撌脣???(隢贝秐閮剖??�𢒰?见?)"), 403
+        return jsonify(ok=False, error="AI 生成功能已停用 (請至設定頁面開啟)"), 403
 
     if not HAS_OLLAMA:
         return jsonify(ok=False, error=f"Ollama library not installed. Details: {OLLAMA_ERR}"), 501
@@ -1337,18 +1334,18 @@ def api_ai_script():
             return jsonify(ok=False, error="Missing keyword"), 400
             
         system_prompt = """
-        雿删𣶹?冽糓撠�平?�惣?批誨?剔頂蝯?AI ?拍???
-        隢𧢲覔?帋蝙?刻��?靘𤤿??屸??萄??㵪??�?銝�畾萇? 50-100 摮梹?隤墧除閬芸??�迤撘讐??剖𥼚蝔踴�?
+        你現在是專業的智慧廣播系統 AI 助理。
+        請根據使用者提供的「關鍵字」，生成一段約 50-100 字，語氣親切、正式的播報稿。
         
-        ?鞾?閬�?蝭��?
-        1. ?�撓?箝�𣬚??�??滚�摰對?蝯訫?蝳�迫雿輻鍂隞颱?銵冽?蝚西? (?𤃬???�arkdown ?澆? (??*蝎烾?**)?�???(=) ?硋�隞𣇉鸌畾羓泵?麄�?
-        2. ?�??蹱?皞𡝗?暺䂿泵??(嚗䎚����?嚗�??䎚�???
-        3. ?刻?敹�?皜�苊?𡒊Ⅱ嚗屸�?滢蝙?典捆?㯄�䭾??湧𨺗摮𡑒炊霈�?�?敶?(靘见?嚗𡁻�?溻�諹??滨?憭𡁻𨺗摮梹??寧鍂?湔?蝣箇?閰???
-        4. 隤𧼮蘂閬��𡁻?瘚�噐嚗屸�?�??喳???(TTS) ?𡑒???
-        5. 隢衤蝙?函?擃𥪯葉?�?銝滩?雿輻鍂?望???
+        【重要規範】
+        1. 僅輸出「純文字」內容，絕對禁止使用任何表情符號 (❌😊)、Markdown 格式 (❌**粗體**)、等號 (=) 或其他特殊符號。
+        2. 僅保留標準標點符號 (，。、？！：「」)。
+        3. 用詞必須清晰明確，避免使用容易造成破音字誤讀的詞彙 (例如：避免「行」等多音字，改用更明確的詞)。
+        4. 語句要通順流暢，適合語音合成 (TTS) 朗讀。
+        5. 請使用繁體中文，不要使用英文。
         """
         
-        user_input = f"撱?偘?𣈯枤摮梹?{keyword}"
+        user_input = f"廣播關鍵字：{keyword}"
         print(f"[AI] Generating script for: {keyword} using Gemma 2 (2B)")
         
         # Invoke Ollama
@@ -1360,14 +1357,14 @@ def api_ai_script():
         except ollama.ResponseError as e:
             if e.status_code == 404:
                 print(f"[AI] Model not found: {e}")
-                return jsonify(ok=False, error="?航炊嚗𡁏𪄳銝滚� AI 璅∪?嚗諹??券𤓖?虫??瑁? `ollama pull gemma2:2b` 銝贝?璅∪???), 404
+                return jsonify(ok=False, error="錯誤：找不到 AI 模型，請在電腦上執行 `ollama pull gemma2:2b` 下載模型。"), 404
             raise e
         
         result_text = response['message']['content'].strip()
         
         # [Safety] Strip potential garbage if AI hallucinated tags
         import re
-        result_text = re.sub(r"^@\w+[:嚗鞲\s*", "", result_text)
+        result_text = re.sub(r"^@\w+[:：]\s*", "", result_text)
         result_text = re.sub(r"\{\{.*?\}\}", "", result_text) # Strip metadata if AI generated it
         
         # [Cleanup] Remove equal signs and other unwanted symbols as requested
@@ -1405,7 +1402,7 @@ def page_not_found(e):
 
         method = request.method
 
-        msg = f"??404 Not Found: {method} {url}"
+        msg = f"❌ 404 Not Found: {method} {url}"
 
         print(msg)
 
@@ -1499,7 +1496,7 @@ def ws_agent_handler(ws):
 @sock.route('/ws/web')
 def ws_web_handler(ws):
     """
-    ?�葦/蝞∠??∪?蝡舐鍂??WebSocket嚗𣬚鍂靘�𦻖?園𨺗閮𠰴誨??
+    老師/管理員前端用的 WebSocket，用來接收音訊廣播
     """
     with WEB_WS_LOCK:
         WEB_WS_CLIENTS.append(ws)
@@ -1508,7 +1505,7 @@ def ws_web_handler(ws):
         while True:
             data = ws.receive()
             if not data: break
-            # ?臭誑?閧?銝�鈭𥕦?頝單??漤?
+            # 可以處理一些心跳或反饋
             if data == "PING":
                 ws.send("PONG")
     except Exception as e:
@@ -1522,28 +1519,28 @@ def ws_web_handler(ws):
 @app.route('/api/audio_proxy')
 def api_audio_proxy():
     """
-    霈枏?蝡臬虾隞乩?頛劐遙雿閗楝敺𤑳??唾?瑼䈑??�??唾??澆?嚗?
+    讓前端可以下載任何路徑的音訊檔（僅限音訊格式）
     """
     path = request.args.get('path')
     if not path: return abort(400)
     
-    # [Robustness] 靽格迤頝臬??�?蝚虫蒂?踹?蝯訫?頝臬??餅?
+    # [Robustness] 修正路徑分隔符並避免絕對路徑攻擊
     path = path.replace('\\', '/').strip('/')
     
     abs_path = None
     found = False
     
-    # 摰𡁶儔?臭??𨅯??�𤌍??
+    # 定義可供搜尋的目錄
     search_dirs = [APP_DIR, DATA_DIR, UPLOAD_DIR, RECORD_DIR]
     try:
-        # ?閙??脣? TAIGI_AUDIO_DIR 隞亙?撠𡁏𧊋摰𡁶儔
+        # 動態獲取 TAIGI_AUDIO_DIR 以免尚未定義
         t_dir = globals().get("TAIGI_AUDIO_DIR")
         if t_dir: search_dirs.append(t_dir)
         import tempfile
         search_dirs.append(tempfile.gettempdir())
     except: pass
 
-    # 1. ?閧??𥟇挱?滨韌頧㗇?
+    # 1. 處理虛擬前綴轉換
     if path.startswith("uploads/"):
         target_rel = path[len("uploads/"):]
         abs_path = os.path.abspath(os.path.join(UPLOAD_DIR, target_rel))
@@ -1555,12 +1552,12 @@ def api_audio_proxy():
         target_rel = path[len("temp_audio/"):]
         abs_path = os.path.join(tempfile.gettempdir(), target_rel)
     else:
-        # 2. ?𡑒岫鞈�?頝臬?
+        # 2. 嘗試資源路徑
         cand = resource_path(path) if not os.path.isabs(path) else path
         if os.path.exists(cand):
             abs_path = cand
         else:
-            # 3. ?嘥? basename ?典歇?亦𤌍?�?撠?
+            # 3. 針對 basename 在已知目錄搜尋
             basename = os.path.basename(path)
             for sdir in search_dirs:
                 if not sdir or not os.path.exists(sdir): continue
@@ -1571,7 +1568,7 @@ def api_audio_proxy():
                     break
             
             if not found:
-                # ?�敺�?閰衣頂蝯望麱摮?(隞?basename ?寥?)
+                # 最後嘗試系統暫存 (以 basename 匹配)
                 sys_tmp = os.path.join(tempfile.gettempdir(), basename)
                 if os.path.exists(sys_tmp):
                     abs_path = sys_tmp
@@ -1691,7 +1688,7 @@ def live_stream(ws):
 
         
 
-        text_area_insert(f"?𣞁 ?湔偘靘�?撌脤�?? ({request.remote_addr})", "Live")
+        text_area_insert(f"🔴 直播來源已連線 ({request.remote_addr})", "Live")
 
         
 
@@ -1741,11 +1738,11 @@ def live_stream(ws):
 
                 print(f"[WS] MPV started PID={proc.pid}")
 
-                text_area_insert(f"?湔偘?剜𦆮??MPV)?笔? (PID={proc.pid})", "Live")
+                text_area_insert(f"直播播放器(MPV)啟動 (PID={proc.pid})", "Live")
 
             except Exception as e:
 
-                text_area_insert(f"??MPV ?笔?憭望?: {e}", "Live")
+                text_area_insert(f"❌ MPV 啟動失敗: {e}", "Live")
 
         
 
@@ -1787,23 +1784,23 @@ def live_stream(ws):
 
                  print(f"[WS] FFplay started PID={proc.pid}")
 
-                 text_area_insert(f"?湔偘?剜𦆮??FFplay)?笔? (PID={proc.pid})", "Live")
+                 text_area_insert(f"直播播放器(FFplay)啟動 (PID={proc.pid})", "Live")
 
              except Exception as e:
 
-                 msg = f"?剜𦆮?典??訫仃?? {e}"
+                 msg = f"播放器啟動失敗: {e}"
 
                  print(msg)
 
-                 text_area_insert(f"??{msg}", "Live")
+                 text_area_insert(f"❌ {msg}", "Live")
 
         else:
 
-             msg = "?芣炎皜砍� mpv/ffmpeg/ffplay嚗𣬚�瘜閙偘?曄凒?剝𨺗閮?
+             msg = "未檢測到 mpv/ffmpeg/ffplay，無法播放直播音訊"
 
              print(f"[WS] {msg}")
 
-             text_area_insert(f"?𩤃? {msg}", "Live")
+             text_area_insert(f"⚠️ {msg}", "Live")
 
 
 
@@ -1869,11 +1866,11 @@ def live_stream(ws):
 
                             if proc.poll() is not None:
 
-                                msg = f"?湔偘?剜𦆮?其葉??(Code: {proc.returncode})"
+                                msg = f"直播播放器中斷 (Code: {proc.returncode})"
 
                                 print(f"[WS] {msg}")
 
-                                text_area_insert(f"??{msg}", "Live")
+                                text_area_insert(f"❌ {msg}", "Live")
 
                                 
 
@@ -1885,7 +1882,7 @@ def live_stream(ws):
 
                                     print(f"[WS] FFplay Stderr: {err_str}")
 
-                                    text_area_insert(f"?航炊閮𦠜�: {err_str[:200]}", "Live")
+                                    text_area_insert(f"錯誤訊息: {err_str[:200]}", "Live")
 
                                 proc = None
 
@@ -1919,7 +1916,7 @@ def live_stream(ws):
 
                 LIVE_HEADER_CHUNKS.clear()
 
-                text_area_insert(f"?對? ?湔偘靘�??瑞?", "Live")
+                text_area_insert(f"⏹️ 直播來源斷線", "Live")
 
 
 
@@ -2131,7 +2128,7 @@ def api_speak_audio_blob():
 
         
 
-        print(f"[Debug] ?嗅�?�𨺗銝𠰴�: {save_path} (Size: {os.path.getsize(save_path)} bytes)")
+        print(f"[Debug] 收到錄音上傳: {save_path} (Size: {os.path.getsize(save_path)} bytes)")
 
 
 
@@ -2145,9 +2142,9 @@ def api_speak_audio_blob():
 
             except: pass
 
-            msg = f"?�𨺗瑼娍??𤾸? ({file_size} bytes)嚗�虾?賡??喳仃?埈??�?憭芰�"
+            msg = f"錄音檔案過小 ({file_size} bytes)，可能錄音失敗或時間太短"
 
-            text_area_insert(f"??{msg}", "Rec")
+            text_area_insert(f"❌ {msg}", "Rec")
 
             return jsonify(ok=False, error=msg), 400
 
@@ -2159,15 +2156,15 @@ def api_speak_audio_blob():
 
             if not _FFMPEG:
 
-                err = "隡箸??函� ffmpeg嚗𣬚�瘜閗?瑼𢛵��?摰㕑? ffmpeg.exe??
+                err = "伺服器無 ffmpeg，無法轉檔。請安裝 ffmpeg.exe。"
 
-                text_area_insert(f"??{err}", "Rec")
+                text_area_insert(f"❌ {err}", "Rec")
 
                 raise RuntimeError(err)
 
             
 
-            text_area_insert(f"?? 甇?銁撠?WebM 頧㗇???MP3...", "Rec")
+            text_area_insert(f"🔄 正在將 WebM 轉檔為 MP3...", "Rec")
 
             try:
 
@@ -2175,7 +2172,7 @@ def api_speak_audio_blob():
 
                 mp3_path = os.path.join(RECORD_DIR, mp3_fname)
 
-                print(f"[Debug] ?见?頧㗇? WebM -> MP3: {mp3_path}")
+                print(f"[Debug] 開始轉檔 WebM -> MP3: {mp3_path}")
 
                 
 
@@ -2197,15 +2194,15 @@ def api_speak_audio_blob():
 
                     sz = os.path.getsize(mp3_path)
 
-                    print(f"[Debug] 頧㗇??𣂼?, MP3 Size: {sz} bytes")
+                    print(f"[Debug] 轉檔成功, MP3 Size: {sz} bytes")
 
-                    text_area_insert(f"??頧㗇??𣂼? ({sz} bytes)嚗峕??蹱偘??, "Rec")
+                    text_area_insert(f"✅ 轉檔成功 ({sz} bytes)，準備播放", "Rec")
 
                 else:
 
-                    msg = "頧㗇?敺峕?獢�?憭望?憭批???0"
+                    msg = "轉檔後檔案消失或大小為 0"
 
-                    text_area_insert(f"??{msg}", "Rec")
+                    text_area_insert(f"❌ {msg}", "Rec")
 
                     print(f"[Debug] {msg}")
 
@@ -2229,27 +2226,27 @@ def api_speak_audio_blob():
 
                 err_msg = cpe.stderr if cpe.stderr else str(cpe)
 
-                text_area_insert(f"??ffmpeg 頧㗇?憭望?嚗㝯err_msg}", "Rec")
+                text_area_insert(f"❌ ffmpeg 轉檔失敗：{err_msg}", "Rec")
 
-                raise RuntimeError(f"頧㗇? MP3 憭望?: {err_msg}")
+                raise RuntimeError(f"轉檔 MP3 失敗: {err_msg}")
 
             except Exception as cvt_err:
 
-                text_area_insert(f"??頧㗇??潛?靘见?嚗㝯cvt_err}", "Rec")
+                text_area_insert(f"❌ 轉檔發生例外：{cvt_err}", "Rec")
 
-                raise RuntimeError(f"頧㗇? MP3 ?潛?靘见?: {cvt_err}")
+                raise RuntimeError(f"轉檔 MP3 發生例外: {cvt_err}")
 
 
 
         # Save metadata so it appears in file list
 
-        _write_upload_meta(save_path, "?�𨺗-" + get_now().strftime("%H%M%S"), fname, "audio")
+        _write_upload_meta(save_path, "錄音-" + datetime.now().strftime("%H%M%S"), fname, "audio")
 
 
 
         # Queue for playback
 
-        print(f"[Debug] ?澆㙈 play_mp3_file({save_path})")
+        print(f"[Debug] 呼叫 play_mp3_file({save_path})")
 
 
 
@@ -2333,11 +2330,11 @@ def api_speak_audio_blob():
 
                         final_play_path = merged_mp3
 
-                        print(f"[Debug] ?�蔥?𣂼?: {final_play_path}")
+                        print(f"[Debug] 合併成功: {final_play_path}")
 
                     else:
 
-                        print(f"[Debug] ?�蔥憭望?: {mres.stderr.decode('utf-8', errors='ignore')}")
+                        print(f"[Debug] 合併失敗: {mres.stderr.decode('utf-8', errors='ignore')}")
 
             except Exception as e:
 
@@ -2381,9 +2378,9 @@ def _writable_dir(p: str) -> bool:
 
 
 
-_BASE_FOR_TT = APP_DIR if _writable_dir(APP_DIR) else DATA_DIR  # 隤脰”?箸??桅?
+_BASE_FOR_TT = APP_DIR if _writable_dir(APP_DIR) else DATA_DIR  # 課表基準目錄
 
-# ?�迂銝𠰴�?��瑼𥪜?嚗�鉄?唾?/?𣇉?/敶梁?嚗?
+# 允許上傳的副檔名（含音訊/圖片/影片）
 
 AUDIO_EXTS = {".mp3", ".wav", ".m4a", ".aac"}
 
@@ -2451,7 +2448,7 @@ def _write_upload_meta(save_path: str, orig_name: str, saved_name: str, mtype: s
 
 # ===============================
 
-# == [ANCHOR] 閮箸𪃾蝝�??==
+# == [ANCHOR] 診斷紀錄 ==
 
 # ===============================
 
@@ -2465,7 +2462,7 @@ DIAG_FILE = DIAG_DIR / "relay_diag.txt"
 
 
 
-# CWA嚗�葉憭格除鞊∠蔡嚗匧𧑐??API ?煾麯嚗�?閮剖??啣?霈𦠜彍 CWA_API_KEY 霈�?吔??亦�蝛箏??�蝙??USGS嚗?
+# CWA（中央氣象署）地震 API 金鑰（預設從環境變數 CWA_API_KEY 讀取；若為空則僅使用 USGS）
 
 CWA_API_KEY = (os.environ.get("CWA_API_KEY", "") or "").strip()
 
@@ -2529,7 +2526,7 @@ def wake_screen():
 
 # ===============================
 
-# == [ANCHOR] ?�𧋦?�?怠? ==
+# == [ANCHOR] 文本區暫存 ==
 
 # ===============================
 
@@ -2545,7 +2542,7 @@ def text_area_insert(msg: str, src: str | None = None):
 
         origin = (src or getattr(_sender_ctx, "name", None) or "System")
 
-        line = f"{get_now().strftime('%H:%M:%S')}  [{origin}] {msg}\n"
+        line = f"{datetime.now().strftime('%H:%M:%S')}  [{origin}] {msg}\n"
 
         if ta and ta.winfo_exists():
 
@@ -2589,7 +2586,7 @@ def flush_text_buffer_if_any():
 
 # ===============================
 
-# == [ANCHOR] ?典?閮剖? ==
+# == [ANCHOR] 全域設定 ==
 
 # ===============================
 
@@ -2605,7 +2602,7 @@ DEFAULT_CONFIG = {"start_sound":"static/audio/beforemic.mp3","end_sound":"static
 
 voice_gender = "female"
 
-voice_language = "zh-TW"  # ?鞱身銝剜??剖𥼚
+voice_language = "zh-TW"  # 預設中文播報
 
 voice_rate = "-20%"
 
@@ -2622,32 +2619,32 @@ stop_playback_event = threading.Event()
 
 # ===============================
 
-# == [ANCHOR] 摮貊?蝡舀綉?園?蝵?==
+# == [ANCHOR] 學生端控制配置 ==
 
 # ===============================
 
-STUDENT_UDP_LISTEN_PORT = 8080        # ?交𤣰摮貊?蝡?HELLO (?寧� 8080 Alternative HTTP)
+STUDENT_UDP_LISTEN_PORT = 8080        # 接收學生端 HELLO (改為 8080 Alternative HTTP)
 
-STUDENT_UDP_CMD_PORT = 8081           # 摮貊?蝡舫?閮剜𦻖?嗅𦶢隞斤? UDP ??(?寧� 8081 Alternative HTTP)
+STUDENT_UDP_CMD_PORT = 8081           # 學生端預設接收命令的 UDP 埠 (改為 8081 Alternative HTTP)
 
-STUDENT_HELLO_TIMEOUT = 60            # 頞�?甇斤??豢𧊋?嗅� HELLO 閬𣇉�?Ｙ?
+STUDENT_HELLO_TIMEOUT = 60            # 超過此秒數未收到 HELLO 視為離線
 
-STUDENT_DISCOVER_INTERVAL = 15        # 撱?偘 DISCOVER ?�??䈑?蝘𡜐?
+STUDENT_DISCOVER_INTERVAL = 15        # 廣播 DISCOVER 的間隔（秒）
 
 STUDENT_DISCOVER_IP = "255.255.255.255"
 
 
 
-# 摮貊?蝡舀??殷?client_id -> {ip, port, hostname, group, mac, last_seen}
+# 學生端清單：client_id -> {ip, port, hostname, group, mac, last_seen}
 students_clients = {}
 students_lock = threading.Lock()
 students_stop_event = threading.Event()
 
-# WebSocket 摮貊?蝡荔?client_id -> WebSocket Object
+# WebSocket 學生端：client_id -> WebSocket Object
 AGENT_WS_CLIENTS = {}
 AGENT_WS_LOCK = threading.Lock()
 
-# WebSocket ?讛汗?函垢嚗匁ist of WebSocket Objects
+# WebSocket 瀏覽器端：List of WebSocket Objects
 WEB_WS_CLIENTS = []
 WEB_WS_LOCK = threading.Lock()
 
@@ -2655,7 +2652,7 @@ WEB_WS_LOCK = threading.Lock()
 
 # ===============================
 
-# == [ANCHOR] ?單??嘥???==
+# == [ANCHOR] 音效初始化 ==
 
 # ===============================
 
@@ -2709,7 +2706,7 @@ MUTE_SOUND  = resource_path(config["mute_sound"])
 
 # ===============================
 
-# == [ANCHOR] ?芾?敹恍�罸枤閮剖? ==
+# == [ANCHOR] 自訂快速鍵設定 ==
 
 # ===============================
 
@@ -2775,7 +2772,7 @@ def save_buddha_shortcuts(data):
 
 # ===============================
 
-# == [ANCHOR] USB-Relay ?菜葫/?批� ==
+# == [ANCHOR] USB-Relay 偵測/控制 ==
 
 # ===============================
 
@@ -2829,7 +2826,7 @@ def get_ports_snapshot_text():
 
     items = RELAY_INFO.get("ports") or []
 
-    if not items: return "(?∪虾閬讠? COM 鋆萘蔭)"
+    if not items: return "(無可見的 COM 裝置)"
 
     lines = []
 
@@ -2899,7 +2896,7 @@ def get_manual_relay_port():
 
 def auto_detect_lcus_port(max_wait_s: float = 8.0):
     manual = get_manual_relay_port()
-    # ?? 敺孵??脫迫?峕艶?Ｘ葫閰血??见? Serial Port
+    # 🆕 徹底防止背景探測試圖開啟 Serial Port
     if manual in ("DISABLED", "NONE"):
         print(">>> [Relay] Backend Serial Access is CRITICALLY DISABLED (Web Direct Mode)")
         _relay_set("status", "DISABLED")
@@ -2998,13 +2995,13 @@ RELAY_PORT = get_manual_relay_port() or auto_detect_lcus_port()
 def control_usb_relay(status, retries=5):
     global RELAY_PORT
     
-    # ?? Check if disabled for Web Serial Mode
+    # 🆕 Check if disabled for Web Serial Mode
     if RELAY_PORT in ("DISABLED", "NONE"):
         msg = f"[Relay] Backend control is DISABLED. Skipping physical {status} - Port released for Browser."
         print(msg)
         text_area_insert(msg, "RELY")
         _relay_set("last_cmd", f"Skip:{status} (WebMode)")
-        # ?? Still update status so Web UI can sync it to local hardware
+        # 🆕 Still update status so Web UI can sync it to local hardware
         _relay_set("status", status)
         return False
     
@@ -3021,7 +3018,7 @@ def control_usb_relay(status, retries=5):
         _relay_set("last_result", "FAIL")
         _relay_set("last_error", "No available COM port")
         save_to_csv(f"Relay set to {status} (FAILED: No Port)", "System", status)
-        ui_safe(lambda: status_label.config(text=f" ???⊥??菜葫?啁匱?餃膥 (COM)"))
+        ui_safe(lambda: status_label.config(text=f" ❌ 無法偵測到繼電器 (COM)"))
         print(f"[Relay] control_usb_relay: FAILED - No COM port found.")
         return False
 
@@ -3037,20 +3034,20 @@ def control_usb_relay(status, retries=5):
                 _relay_set("last_result", "OK")
                 _relay_set("last_error", "")
                 save_to_csv(f"Relay set to {status}", "System", status)
-                ui_safe(lambda: status_label.config(text=f" 隤鮋𨺗?毺鍂銝哨?蝜潮𤓖?剁?{status}"))
+                ui_safe(lambda: status_label.config(text=f" 語音啟用中，繼電器：{status}"))
                 print(f"[Relay] Port {RELAY_PORT} set to {status} (SUCCESS)")
                 return True
     except Exception as e:
         _relay_set("last_result", "FAIL")
         _relay_set("last_error", str(e))
         save_to_csv(f"Relay control failed: {e}", "System", "Failed")
-        ui_safe(lambda: status_label.config(text="??蝜潮𤓖?冽綉?嗅仃??))
+        ui_safe(lambda: status_label.config(text="❌ 繼電器控制失敗"))
         print(f"[Relay] Port {RELAY_PORT} control error: {e}")
         return False
 
     save_to_csv("Relay control failed", "System", "Failed")
 
-    ui_safe(lambda: status_label.config(text="??蝜潮𤓖?冽綉?嗅仃??))
+    ui_safe(lambda: status_label.config(text="❌ 繼電器控制失敗"))
 
 
 
@@ -3108,7 +3105,7 @@ def test_relay_off():
 
 
 
-# ==== [4-Relay COM 閮剖??�綉?跑 ====
+# ==== [4-Relay COM 設定與控制] ====
 
 
 
@@ -3135,7 +3132,7 @@ RELAY4_INFO = {
 def _relay4_set(key, val):
     RELAY4_INFO[key] = val
     RELAY4_INFO["last_update_ts"] = time.time()
-    # ???峕郊?湔鰵?啣�??STATE 隞乩噶 /state API 餈𥪜?
+    # ✅ 同步更新到全域 STATE 以便 /state API 返回
     if "relay4" not in STATE: STATE["relay4"] = {}
     st_clean = {str(k): int(v) for k, v in (RELAY4_INFO.get("ch_state") or {1:0,2:0,3:0,4:0}).items()}
     STATE["relay4"] = {
@@ -3145,7 +3142,7 @@ def _relay4_set(key, val):
         "last_result": RELAY4_INFO.get("last_result"),
         "ts": RELAY4_INFO.get("last_update_ts"),
     }
-    # ??撱?偘?峕郊嚗𡁶Ⅱ靽脲??厰???relay4.html ?�??Ｗ朖?�凒??
+    # ✅ 廣播同步：確保所有開啟 relay4.html 的頁面即時更新
     try:
         import json as _j
         _msg = _j.dumps({
@@ -3160,7 +3157,7 @@ def _relay4_set(key, val):
 
 
 def get_manual_relay4_port():
-    """敺?~/.udp_receiver/relay4_port.txt ?𣇉兛憓�???RELAY4_PORT 霈�??4-Relay COM??""
+    """從 ~/.udp_receiver/relay4_port.txt 或環境變數 RELAY4_PORT 讀取 4-Relay COM。"""
     env = os.environ.get("RELAY4_PORT")
     if env: return env.strip()
     
@@ -3171,7 +3168,7 @@ def get_manual_relay4_port():
             if val: return val
         except: pass
         
-    # ?? Fallback to relay_port.txt if it's DISABLED
+    # 🆕 Fallback to relay_port.txt if it's DISABLED
     cfg_main = DIAG_DIR / "relay_port.txt"
     if cfg_main.exists():
         try:
@@ -3185,12 +3182,12 @@ def get_manual_relay4_port():
 
 def auto_detect_4relay_port(max_wait_s: float = 8.0):
     manual = get_manual_relay4_port()
-    # ?? 敺孵??脫迫 4-Relay ?峕艶?Ｘ葫
+    # 🆕 徹底防止 4-Relay 背景探測
     if manual in ("DISABLED", "NONE"):
         print(">>> [4R] 4-Relay Backend Serial Access is CRITICALLY DISABLED")
         return "DISABLED"
 
-    """4-Relay ?芸??�?嚗𡁶椘?𤩺𪄳?䔶??臬鱓 Relay?滨? CH34x COM??""
+    """4-Relay 自動掃描：盡量找「不是單 Relay」的 CH34x COM。"""
     if manual:
 
         with RELAY4_LOCK:
@@ -3241,7 +3238,7 @@ def auto_detect_4relay_port(max_wait_s: float = 8.0):
 
 
 
-            # ?芸??輸??桀?蝯血鱓 Relay 雿輻鍂??COM
+            # 優先避開目前給單 Relay 使用的 COM
 
             current_single = RELAY_INFO.get("port") or RELAY_PORT
 
@@ -3301,11 +3298,11 @@ def list_4relay_candidate_ports():
 
     """
 
-    ?堒枂?桀??舐鍂??4-Relay COM 皜�鱓嚗?
+    列出目前可用的 4-Relay COM 清單：
 
-    - ?芣???CH34x / USB-SERIAL ?賊??�?
+    - 只挑出 CH34x / USB-SERIAL 相關的埠
 
-    - ?㗛??輸??桀?甇?眏??Relay 雿輻鍂??COM嚗㇌ELAY_PORT ??RELAY_INFO["port"]嚗?
+    - 儘量避開目前正由單 Relay 使用的 COM（RELAY_PORT 或 RELAY_INFO["port"]）
 
     """
 
@@ -3343,7 +3340,7 @@ def list_4relay_candidate_ports():
 
         if current_single and dev == current_single:
 
-            # ?輸??桀?蝯血鱓 Relay 雿輻鍂??COM
+            # 避開目前給單 Relay 使用的 COM
 
             continue
 
@@ -3363,10 +3360,10 @@ RELAY4_PORT = get_manual_relay4_port() or auto_detect_4relay_port()
 
 def control_usb_relay4(ch: int, on: bool, retries: int = 5, port_override: str | None = None):
     global RELAY4_PORT
-    if ch not in (1, 2, 3, 4): raise ValueError("ch 敹�???1~4")
+    if ch not in (1, 2, 3, 4): raise ValueError("ch 必須是 1~4")
 
-    # [Sync] ?芾??�誘?�?嚗𣬚洵銝�?�??湔鰵?�?贝?撱?偘 (Virtual Sync)
-    # ?蹱見?喃噶隡箸??冽??亙祕擃䈑?Web Serial ?�?敺䕘??嗡??餉�銋蠘�?單??见�霈𡃏𠧧
+    # [Sync] 只要指令送達，第一時間更新狀態與廣播 (Virtual Sync)
+    # 這樣即便伺服器沒接實體，Web Serial 切換後，其他電腦也能即時看到變色
     with RELAY4_LOCK:
         st = RELAY4_INFO.get("ch_state") or {1: 0, 2: 0, 3: 0, 4: 0}
         st[int(ch)] = 1 if on else 0
@@ -3374,7 +3371,7 @@ def control_usb_relay4(ch: int, on: bool, retries: int = 5, port_override: str |
         _relay4_set("status", "ON" if any(st.values()) else "OFF")
         _relay4_set("last_cmd", f"CH{ch}:{'ON' if on else 'OFF'}")
 
-    # ?亥???DISABLED 璅∪?嚗𣬚凒?亥???(Web Direct Mode)
+    # 若處於 DISABLED 模式，直接返回 (Web Direct Mode)
     if RELAY4_PORT in ("DISABLED", "NONE") and not port_override:
         print(f"[4R-WebMode] CH{ch} -> {'ON' if on else 'OFF'}")
         return True
@@ -3412,7 +3409,7 @@ RELAY_ACTIVE_LOCK = threading.RLock()
 # [NEW] Relay Config Persistence
 RELAY_CONFIG_PATH = Path(DATA_DIR) / "relay_config.json"
 RELAY_AUTO_ON = False
-RELAY_OFF_DELAY = 0.5  # ?�蝯�??芸辣??(play_sound ?折�撌脫? 1.5 蝘?browser 蝺抵?)
+RELAY_OFF_DELAY = 0.5  # 最終保險延遲 (play_sound 內部已有 1.5 秒 browser 緩衝)
 
 def _save_relay_config():
     try:
@@ -3464,11 +3461,11 @@ def relay_release(tag: str = ""):
     with RELAY_ACTIVE_LOCK:
         RELAY_ACTIVE_CNT = max(0, RELAY_ACTIVE_CNT - 1)
         if RELAY_ACTIVE_CNT > 0:
-            print(f"[RELY] [{get_now().strftime('%H:%M:%S.%f')[:-3]}] relay_release({tag}): cnt={RELAY_ACTIVE_CNT}, still held")
+            print(f"[RELY] [{_dt.datetime.now().strftime('%H:%M:%S.%f')[:-3]}] relay_release({tag}): cnt={RELAY_ACTIVE_CNT}, still held")
             return
 
     # We reached 0. 
-    print(f"[RELY] [{get_now().strftime('%H:%M:%S.%f')[:-3]}] relay_release({tag}): cnt=0, will OFF after {RELAY_OFF_DELAY}s")
+    print(f"[RELY] [{_dt.datetime.now().strftime('%H:%M:%S.%f')[:-3]}] relay_release({tag}): cnt=0, will OFF after {RELAY_OFF_DELAY}s")
     if not RELAY_AUTO_ON:
         _diag(f"[Relay] release({tag}) but Auto-On disabled. Skipping OFF.")
         return
@@ -3480,7 +3477,7 @@ def relay_release(tag: str = ""):
     # Final check if it's still 0
     with RELAY_ACTIVE_LOCK:
         if RELAY_ACTIVE_CNT == 0:
-            print(f"[RELY] [{get_now().strftime('%H:%M:%S.%f')[:-3]}] relay_release({tag}): Sending OFF to hardware")
+            print(f"[RELY] [{_dt.datetime.now().strftime('%H:%M:%S.%f')[:-3]}] relay_release({tag}): Sending OFF to hardware")
             control_usb_relay("OFF")
             control_usb_relay4(1, False)
 
@@ -3499,7 +3496,7 @@ def relay_force_off():
 
 # ===============================
 
-# == [ANCHOR] ?剜𦆮?批� ==
+# == [ANCHOR] 播放控制 ==
 
 # ===============================
 
@@ -3510,21 +3507,21 @@ def relay_force_off():
 
 
 def play_fx(filename, ignore_interrupt=True, wait=True):
-    # ?滚??穃� play_sound 隞乩噶撱?偘?啣?蝡?
+    # 重導向到 play_sound 以便廣播到前端
     play_sound(filename, ignore_interrupt=ignore_interrupt, wait=wait)
 
 def stop_web_audio():
-    """?潮��?甇Ｘ?隞斤策?滨垢"""
+    """發送停止指令給前端"""
     msg = json.dumps({"type": "stop_audio", "ts": time.time()})
     _broadcast_web(msg)
 
 def pause_web_audio():
-    """?潮��麱?𨀣?隞斤策?滨垢"""
+    """發送暫停指令給前端"""
     msg = json.dumps({"type": "pause_audio", "ts": time.time()})
     _broadcast_web(msg)
 
 def resume_web_audio():
-    """?潮��匱蝥峕偘?暹?隞斤策?滨垢"""
+    """發送繼續播放指令給前端"""
     msg = json.dumps({"type": "resume_audio", "ts": time.time()})
     _broadcast_web(msg)
 
@@ -3577,9 +3574,9 @@ def set_volume(level: int):
 
             if 'volume_label' in globals():
 
-                volume_label.config(text=f"?喲?嚗㝯VOLUME_LEVEL}%")
+                volume_label.config(text=f"音量：{VOLUME_LEVEL}%")
 
-            status_label.config(text=f" 隤鮋𨺗?毺鍂銝哨??喲? {VOLUME_LEVEL}%嚗?)
+            status_label.config(text=f" 語音啟用中（音量 {VOLUME_LEVEL}%）")
 
         finally:
 
@@ -3605,11 +3602,11 @@ def _set_progress(pct):
 
 def broadcast_web_audio(filename, duration=0):
     """
-    撱?偘?唾??剜𦆮蝯行???Web ?冽� (撌脣�?吔??舀螱?滩??擧蕪)
+    廣播音訊播放給所有 Web 用戶 (已優化，支援重複過濾)
     """
     basename = os.path.basename(filename)
     
-    # 瘙箏?蝬脤??臬??𣇉??詨?頝臬?
+    # 決定網頁可存取的相對路徑
     clean_path = filename.replace('\\', '/')
     
     if "static/audio" in clean_path.lower():
@@ -3621,11 +3618,11 @@ def broadcast_web_audio(filename, duration=0):
         rel_path = f"records/{basename}"
         url = f"/api/audio_proxy?path={quote(rel_path)}"
     elif "tmp" in filename.lower() or "temp" in filename.lower():
-        # TTS ?𡝗麱摮䀹?
+        # TTS 或暫存檔
         rel_path = f"temp_audio/{basename}"
         url = f"/api/audio_proxy?path={quote(rel_path)}"
     else:
-        # ?鞱身?箸覔?桅?鞈�?
+        # 預設為根目錄資源
         url = f"/api/audio_proxy?path={quote(basename)}"
 
     
@@ -3660,7 +3657,7 @@ def broadcast_web_audio(filename, duration=0):
                 WEB_WS_CLIENTS.remove(d)
 
 def play_sound(filename, duration_estimate=None, ignore_interrupt=False, wait=True):
-    print(f"[Speaker] ?剜𦆮?唾?: {filename} (wait={wait})")
+    print(f"[Speaker] 播放音訊: {filename} (wait={wait})")
     try:
         # Resolve real path
         real_path = filename
@@ -3669,29 +3666,29 @@ def play_sound(filename, duration_estimate=None, ignore_interrupt=False, wait=Tr
             
         # 1. Local Playback Removed - Fully Web-based now
 
-        # 2. Progress Calculation  (蝎暹??�𩑈?菜葫)
+        # 2. Progress Calculation  (精準時長偵測)
         if not duration_estimate or duration_estimate <= 0:
             try:
                 if real_path.lower().endswith(".mp3"):
-                    # ?寞?銝�嚗饢utagen 蝎暹?霈�??
+                    # 方法一：mutagen 精準讀取
                     try:
                         from mutagen.mp3 import MP3
                         duration_estimate = MP3(real_path).info.length
-                        print(f"[Speaker] Duration (mutagen): {duration_estimate:.2f}s  ??{os.path.basename(real_path)}")
+                        print(f"[Speaker] Duration (mutagen): {duration_estimate:.2f}s  ← {os.path.basename(real_path)}")
                     except Exception as _mu_err:
-                        # ?寞?鈭䕘?靘脲?獢�之撠譍摯蝞?(128kbps ??EdgeTTS 璅蹱?雿滚???
-                        print(f"[Speaker] mutagen 憭望?: {_mu_err}  ???寧鍂憭批?隡啁?")
+                        # 方法二：依檔案大小估算 (128kbps 為 EdgeTTS 標準位元率)
+                        print(f"[Speaker] mutagen 失敗: {_mu_err}  → 改用大小估算")
                         try:
                             _sz = os.path.getsize(real_path)
                             duration_estimate = _sz * 8 / 128000  # 128kbps
-                            print(f"[Speaker] Duration (size {_sz}B @ 128kbps): {duration_estimate:.2f}s  ??{os.path.basename(real_path)}")
+                            print(f"[Speaker] Duration (size {_sz}B @ 128kbps): {duration_estimate:.2f}s  ← {os.path.basename(real_path)}")
                         except:
-                            duration_estimate = 8.0  # 摰匧�?鞱身??
+                            duration_estimate = 8.0  # 安全預設值
                 elif real_path.lower().endswith(".wav"):
                     import wave
                     with wave.open(real_path, 'rb') as wf:
                         duration_estimate = wf.getnframes() / float(wf.getframerate())
-                    print(f"[Speaker] Duration (wave): {duration_estimate:.2f}s  ??{os.path.basename(real_path)}")
+                    print(f"[Speaker] Duration (wave): {duration_estimate:.2f}s  ← {os.path.basename(real_path)}")
                 else:
                     duration_estimate = 5.0
             except Exception as _dur_err:
@@ -3721,10 +3718,10 @@ def play_sound(filename, duration_estimate=None, ignore_interrupt=False, wait=Tr
             percent = min(100, int(100*t/duration_estimate))
             ui_safe(_set_progress, percent); STATE["progress"] = percent
         
-        # [KEY FIX] 蝑匧??讛汗?函垢?�迤?剖? (蝬脰楝撱園� + 蝺抵??笔? + ?剜𦆮畾条?)
-        # 銝滨恣?唾??瑞�嚗𣬚�讛汗?典??嗅�?�誘?唳偘摰屸�?�閬�?憭𡝗???
+        # [KEY FIX] 等待瀏覽器端真正播完 (網路延遲 + 緩衝啟動 + 播放殘留)
+        # 不管音訊長短，瀏覽器從收到指令到播完都需要額外時間
         if not interrupted:
-            BROWSER_AUDIO_TAIL = 2.5  # 蝘𡜐?蝯衣�讛汗?函?憿滚?蝺抵??�? (敺?1.5 憓䂿� 2.5)
+            BROWSER_AUDIO_TAIL = 2.5  # 秒：給瀏覽器的額外緩衝時間 (從 1.5 增為 2.5)
             tail_t = 0
             while tail_t < BROWSER_AUDIO_TAIL:
                 if stop_playback_event.is_set() and not ignore_interrupt:
@@ -3734,18 +3731,18 @@ def play_sound(filename, duration_estimate=None, ignore_interrupt=False, wait=Tr
             
         ui_safe(_set_progress, 100); STATE["progress"] = 100
         import datetime as _dt
-        print(f"[Speaker] [{get_now().strftime('%H:%M:%S.%f')[:-3]}] play_sound DONE: {os.path.basename(filename)} (duration={duration_estimate:.1f}s + 1.5s tail)")
+        print(f"[Speaker] [{_dt.datetime.now().strftime('%H:%M:%S.%f')[:-3]}] play_sound DONE: {os.path.basename(filename)} (duration={duration_estimate:.1f}s + 1.5s tail)")
     except Exception as e:
         print(f"[RedirAudio] Play error: {e}")
 
 
 
 def _interrupt_current_playback():
-    """銝剜𪃾?桀??�??唾? MP3 ?剜𦆮"""
+    """中斷目前的語音與 MP3 播放"""
     print("[Playback] Interrupting current playback...")
     stop_playback_event.set()
     stop_web_audio()
-    # 蝯虫?銝�暺墧??栞? Worker ?见� Event嚗𣬚�敺�?皜�膄嚗屸�?滩炊畾箇??亥�䔶??�鰵隞餃?
+    # 給予一點時間讓 Worker 看到 Event，然後再清除，避免誤殺緊接而來的新任務
     time.sleep(0.1)
     stop_playback_event.clear()
     ui_safe(_set_progress, 0); STATE["progress"] = 0
@@ -3774,7 +3771,7 @@ def with_relay_playback(play_func):
 
 
 
-# ---- ffmpeg ?菜葫嚗út-dlp ?剁?----
+# ---- ffmpeg 偵測（yt-dlp 用）----
 
 
 
@@ -3808,7 +3805,7 @@ _FFMPEG = _detect_ffmpeg()
 
 # ===============================
 
-# == [ANCHOR] YouTube / MP3 ?剜𦆮 ==
+# == [ANCHOR] YouTube / MP3 播放 ==
 
 # ===============================
 
@@ -3834,7 +3831,7 @@ def _generate_upload_filename(ext: str, prefix: str = "upload") -> str:
 
     """Return ASCII filename like upload_YYYYMMDD_HHMMSS(_n).ext to avoid unsafe chars."""
 
-    ts = get_now().strftime("%Y%m%d_%H%M%S")
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     base = f"{prefix}_{ts}"
 
@@ -3856,7 +3853,7 @@ def _generate_upload_filename(ext: str, prefix: str = "upload") -> str:
 
 def _unique_stem_in_uploads(stem: str) -> str:
 
-    """蝣箔? uploads ?找??滚?嚗�誑 .mp3 瑼Ｘ䰻嚗㚁?敹�??�? (1)??2)??""
+    """確保 uploads 內不重名（以 .mp3 檢查），必要時加 (1)、(2)…"""
 
     base = os.path.join(UPLOAD_DIR, f"{stem}.mp3")
 
@@ -3882,17 +3879,17 @@ def download_youtube_audio_to_uploads(url: str) -> tuple[str, float, str]:
 
     """
 
-    銝贝? YouTube ?唾? ??uploads 鞈�?憭橘?瑼𥪜?=敶梁?璅䠷?.mp3嚗�???(mp3_path, duration_sec, title)
+    下載 YouTube 音訊 → uploads 資料夾，檔名=影片標題.mp3，回傳 (mp3_path, duration_sec, title)
 
     """
 
     if not _FFMPEG:
 
-        raise RuntimeError("蝟餌絞?芣𪄳??ffmpeg嚗𣬚�瘜閗???mp3?�?摰㕑? ffmpeg ?𡝗? ffmpeg.exe ?曉銁蝔见??𣬚𤌍?��?)
+        raise RuntimeError("系統未找到 ffmpeg，無法轉出 mp3。請安裝 ffmpeg 或把 ffmpeg.exe 放在程式同目錄。")
 
 
 
-    # ?�䔝皜祆?憿諹??瑕漲
+    # 先探測標題與長度
 
     with yt_dlp.YoutubeDL({'quiet': True, 'nocheckcertificate': True}) as probe:
 
@@ -3942,7 +3939,7 @@ def download_youtube_audio_to_uploads(url: str) -> tuple[str, float, str]:
 
     if not os.path.exists(final_mp3):
 
-        # 撠烐彍?�?嚗𡁜??閧??舀??滢???mp3嚗�?隢碶?銝齿?嚗㚁??𡁏?敺峕??湔?撠?
+        # 少數情況：後處理副檔名不是 mp3（理論上不會），做最後救援搜尋
 
         cand = glob.glob(os.path.join(UPLOAD_DIR, f"{stem}.*"))
 
@@ -3954,7 +3951,7 @@ def download_youtube_audio_to_uploads(url: str) -> tuple[str, float, str]:
 
         else:
 
-            raise FileNotFoundError("銝贝?摰峕?雿�𧊋?曉�頛詨枂瑼𢛵�?)
+            raise FileNotFoundError("下載完成但未找到輸出檔。")
 
 
 
@@ -3970,43 +3967,43 @@ def play_youtube_audio_with_relay(url):
 
     try:
 
-        set_playing_status(" 甇?銁銝贝? YouTube ?唾?銝虫?摮䁅秐 uploads ...")
+        set_playing_status(" 正在下載 YouTube 音訊並保存至 uploads ...")
 
         mp3_path, duration, title = download_youtube_audio_to_uploads(url)
 
         if stop_playback_event.is_set() or voice_muted:
 
-            set_playing_status("?對? ?剜𦆮撌脖葉??); ui_safe(_set_progress, 0); STATE["progress"]=0; return
+            set_playing_status("⏹️ 播放已中斷"); ui_safe(_set_progress, 0); STATE["progress"]=0; return
 
-        set_playing_status(f" 銝贝?摰峕?嚗㝯os.path.basename(mp3_path)}嚗屸?憪𧢲偘?撾�?)
+        set_playing_status(f" 下載完成：{os.path.basename(mp3_path)}，開始播放…")
 
-        text_area_insert(f" YouTube ??uploads嚗㝯os.path.basename(mp3_path)}嚗ùtitle}嚗?)
+        text_area_insert(f" YouTube → uploads：{os.path.basename(mp3_path)}（{title}）")
 
         save_to_csv(f"PlayYouTubeSaved:{os.path.basename(mp3_path)}", "System")
 
-        _really_play_mp3_file(mp3_path)  # 銝滚⏛?歹?靽嘥???uploads
+        _really_play_mp3_file(mp3_path)  # 不刪除，保存於 uploads
 
         if not stop_playback_event.is_set() and not voice_muted:
 
-            set_playing_status("??YouTube?唾??剜𦆮摰𣬚佅嚗�?獢�歇靽萘???uploads嚗?)
+            set_playing_status("✅ YouTube音訊播放完畢（檔案已保留於 uploads）")
 
-            text_area_insert("??YouTube ?唾??剜𦆮摰峕?嚗�歇靽萘?瑼娍?嚗?)
+            text_area_insert("✅ YouTube 音訊播放完成（已保留檔案）")
 
             save_to_csv(f"PlayYouTubeAudioDone:{os.path.basename(mp3_path)}", "System")
 
         else:
 
-            set_playing_status("?對? ?剜𦆮撌脖葉??); ui_safe(_set_progress, 0); STATE["progress"]=0
+            set_playing_status("⏹️ 播放已中斷"); ui_safe(_set_progress, 0); STATE["progress"]=0
 
     except Exception as e:
 
-        print("YouTube ?剜𦆮憭望?嚗?, e)
+        print("YouTube 播放失敗：", e)
 
-        text_area_insert(f"??YouTube ?剜𦆮/銝贝?憭望?嚗㝯e}")
+        text_area_insert(f"❌ YouTube 播放/下載失敗：{e}")
 
         save_to_csv(f"PlayYouTubeAudioFail:{url}", "System")
 
-        set_playing_status("??YouTube?唾??閧?憭望?"); ui_safe(_set_progress, 0); STATE["progress"]=0
+        set_playing_status("❌ YouTube音訊處理失敗"); ui_safe(_set_progress, 0); STATE["progress"]=0
 
 
 
@@ -4036,13 +4033,13 @@ def mp3_worker():
 
         item = mp3_queue.get()
 
-        print(f"[Debug] MP3 Worker ?硋枂: {item}")
+        print(f"[Debug] MP3 Worker 取出: {item}")
 
         try:
 
             if stop_playback_event.is_set() or voice_muted:
 
-                print(f"[Debug] ?仿??剜𦆮 (Stop={stop_playback_event.is_set()}, Mute={voice_muted})")
+                print(f"[Debug] 略過播放 (Stop={stop_playback_event.is_set()}, Mute={voice_muted})")
 
                 continue
 
@@ -4050,13 +4047,13 @@ def mp3_worker():
 
                 url = item[1]
 
-                set_playing_status(" 甇?銁銝贝? MP3 ...")
+                set_playing_status(" 正在下載 MP3 ...")
 
                 path = _download_mp3_to_temp(url)
 
                 if not path:
 
-                    set_playing_status("??銝贝?/?剜𦆮MP3憭望?")
+                    set_playing_status("❌ 下載/播放MP3失敗")
 
                     ui_safe(_set_progress, 0); STATE["progress"] = 0
 
@@ -4090,19 +4087,19 @@ def mp3_worker():
 
 def _really_play_mp3_file(path):
 
-    print(f"[Debug] 皞硋??剜𦆮 MP3: {path}")
+    print(f"[Debug] 準備播放 MP3: {path}")
 
     # Fix: Resolve resource path BEFORE checking existence to support frozen app
     mp3_path = resource_path(path) if not os.path.isabs(path) else path
 
     if not os.path.exists(mp3_path):
-        print(f"[Debug] 瑼娍?銝滚??? {mp3_path} (Original: {path})")
+        print(f"[Debug] 檔案不存在: {mp3_path} (Original: {path})")
         return
 
-    set_playing_status(f" ?剜𦆮MP3銝?..({os.path.basename(path)})")
+    set_playing_status(f" 播放MP3中...({os.path.basename(path)})")
 
 
-    text_area_insert(f" ?祆? MP3嚗㝯os.path.basename(path)}")
+    text_area_insert(f" 本機 MP3：{os.path.basename(path)}")
 
     save_to_csv(f"PlayMP3Local:{os.path.basename(path)}", "System")
 
@@ -4116,27 +4113,27 @@ def _really_play_mp3_file(path):
 
         print(f"[Debug] Pygame play error: {e}")
 
-        text_area_insert(f"???剜𦆮憭望?嚗㝯e}", "System")
+        text_area_insert(f"❌ 播放失敗：{e}", "System")
 
         
 
     if not stop_playback_event.is_set() and not voice_muted:
 
-        set_playing_status("???剜𦆮MP3摰峕?")
+        set_playing_status("✅ 播放MP3完成")
 
-        text_area_insert("???祆? MP3 ?剜𦆮摰峕?")
+        text_area_insert("✅ 本機 MP3 播放完成")
 
         save_to_csv(f"PlayMP3LocalDone:{os.path.basename(path)}", "System")
 
     else:
 
-        set_playing_status("?對? ?剜𦆮撌脖葉??); ui_safe(_set_progress, 0); STATE["progress"]=0
+        set_playing_status("⏹️ 播放已中斷"); ui_safe(_set_progress, 0); STATE["progress"]=0
 
 
 
 def play_mp3_file(path):
 
-    print(f"[Debug] ?惩� MP3 Queue: {path}")
+    print(f"[Debug] 加入 MP3 Queue: {path}")
 
     enqueue_drop_old(mp3_queue, path)
 
@@ -4144,7 +4141,7 @@ def play_mp3_file(path):
 
 def _download_mp3_to_temp(url: str) -> str | None:
 
-    text_area_insert(f"漎�? 銝贝? MP3嚗㝯url}")
+    text_area_insert(f"⬇️ 下載 MP3：{url}")
 
     save_to_csv(f"DownloadMP3:{url}", "System")
 
@@ -4164,7 +4161,7 @@ def _download_mp3_to_temp(url: str) -> str | None:
 
             if not (ct2.startswith('audio/') or url.lower().endswith('.mp3')):
 
-                raise ValueError("URL 銝齿糓?航儘霅条??唾?")
+                raise ValueError("URL 不是可辨識的音訊")
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
 
@@ -4176,7 +4173,7 @@ def _download_mp3_to_temp(url: str) -> str | None:
 
     except Exception as e:
 
-        text_area_insert(f"??銝贝? MP3 憭望?嚗㝯e}")
+        text_area_insert(f"❌ 下載 MP3 失敗：{e}")
 
         save_to_csv(f"DownloadMP3Fail:{url}", "System")
 
@@ -4186,7 +4183,7 @@ def _download_mp3_to_temp(url: str) -> str | None:
 
 # ===============================
 
-# == [ANCHOR] Edge/Piper/gTTS/SAPI5 隤鮋𨺗 ==
+# == [ANCHOR] Edge/Piper/gTTS/SAPI5 語音 ==
 
 # ===============================
 
@@ -4194,11 +4191,11 @@ def _download_mp3_to_temp(url: str) -> str | None:
 
 def detect_language(text):
 
-    # ?�?雿輻鍂??UI 撘瑕�?豢?嚗��?滩◤摮堒??菜葫閬�?嚗?
+    # 先看使用者 UI 強制選擇（避免被字元偵測覆蓋）
 
-    # 憒�?雿輻鍂?��鈭��諹䌊?訫�皜研�㵪??滩?銝𧢲䲮?�??��皜?
+    # 如果使用者選了「自動偵測」，才跑下方的字元偵測
 
-    # ?血??湔𦻖?𧼮�雿輻鍂?��?�?閮�隞?Ⅳ
+    # 否則直接回傳使用者選的語言代碼
 
     selected_label = lang_label_var.get()
 
@@ -4212,7 +4209,7 @@ def detect_language(text):
 
 
 
-    # ?芸??菜葫?讛摩
+    # 自動偵測邏輯
 
     if re.search(r'[\u3040-\u30ff\u31f0-\u31ff]', text): return "ja-JP"
 
@@ -4220,7 +4217,7 @@ def detect_language(text):
 
     if re.search(r'[\uac00-\ud7af]', text): return "ko-KR"
 
-    # 蝪∪鱓?文?嚗朞𥅾?望?摮埈?頞�?銝�?𠰴?閬𣇉�?望?
+    # 簡單判定：若英文字母超過一半則視為英文
 
     if len(re.findall(r'[a-zA-Z]', text)) > len(text)/2: return "en-US"
 
@@ -4256,15 +4253,15 @@ VOICE_ID_TABLE = {
 
 }
 
-LANG_OPTIONS=[("?芸??菜葫 (Auto)","auto"), ("銝剜?嚗�蝱???","zh-TW"),("?望?嚗�??页?","en-US"),("?交?嚗�𠯫?穿?","ja-JP"),("?𤘪?嚗�??页?","ko-KR"),("頞𠰴?隤?,"vi-VN"), ("?砍?撖?擃䀹?","km-KH"), ("撖桀?","lo-LA"), ("瘜啣?","th-TH"), ("蝺祉璛","my-MM"), ("擐砌?镼蹂?","ms-MY"), ("?啣側隤?,"id-ID"), ("?脣?鞈?,"tl-PH"), ("?啗?","nan-TW")]
+LANG_OPTIONS=[("自動偵測 (Auto)","auto"), ("中文（台灣）","zh-TW"),("英文（美國）","en-US"),("日文（日本）","ja-JP"),("韓文（韓國）","ko-KR"),("越南語","vi-VN"), ("柬埔寨/高棉","km-KH"), ("寮國","lo-LA"), ("泰國","th-TH"), ("緬甸","my-MM"), ("馬來西亞","ms-MY"), ("印尼語","id-ID"), ("菲律賓","tl-PH"), ("台語","nan-TW")]
 
 lang_label2code={lab:code for lab,code in LANG_OPTIONS}; lang_code2label={code:lab for lab,code in LANG_OPTIONS}
 
 GENDER_LABELS=[
 
-    ("憟唾�","female"),
+    ("女聲","female"),
 
-    ("?瑁�","male"),
+    ("男聲","male"),
 
 ]
 
@@ -4303,15 +4300,15 @@ def auto_unmute_if_needed():
 
         stop_playback_event.clear()
 
-        ui_safe(status_label.config, text=" 隤鮋𨺗?毺鍂銝哨??芸?閫?膄?𣈯𨺗嚗?, fg="#188a3a")
+        ui_safe(status_label.config, text=" 語音啟用中（自動解除靜音）", fg="#188a3a")
 
-        set_playing_status(" 隤鮋𨺗?毺鍂銝?)
+        set_playing_status(" 語音啟用中")
 
 
 
 @with_relay_playback
 def taigi_play_wav_with_fx(path):
-    """?啗??�?摰峕?敺䕘?憟㛖鍂?𡒊凒?交偘?整�讛??潘?Relay ?𦥑??滚??鍦�摰嫖?蝯鞉??㰕elay ?栶�?""
+    """台語合成完成後，套用『直接播放』規格：Relay 開→前導→內容→結束→Relay 關。"""
     relay_acquired = False
     try:
         # Precision: Activate Relay only when audio is ready
@@ -4321,8 +4318,8 @@ def taigi_play_wav_with_fx(path):
             if first: time.sleep(2.5) # Warmup amp
 
         auto_unmute_if_needed()
-        ui_safe(set_playing_status, f" ?啗??剜𦆮嚗㝯os.path.basename(path)}")
-        # ?滚???
+        ui_safe(set_playing_status, f" 台語播放：{os.path.basename(path)}")
+        # 前導音
         try:
             if CHIME_ENABLED and START_SOUND and os.path.exists(START_SOUND):
                 print(f"[Chime] Playing start (Taigi): {START_SOUND}")
@@ -4333,11 +4330,11 @@ def taigi_play_wav_with_fx(path):
         except Exception as e:
             print(f"[Chime] Taigi start error: {e}")
 
-        # 銝餅偘
+        # 主播
         print(f"[Taigi] Playing synthesis: {path}")
-        play_sound(path) # 雿輻鍂銝餅偘?曉膥嚗峕𣈲??Web 撱?偘
+        play_sound(path) # 使用主播放器，支援 Web 廣播
 
-        # 蝯鞉???
+        # 結束音
         try:
             if not (stop_playback_event.is_set() or voice_muted):
                 if CHIME_ENABLED and END_SOUND and os.path.exists(END_SOUND):
@@ -4346,21 +4343,21 @@ def taigi_play_wav_with_fx(path):
         except Exception as e:
              print(f"[Chime] Taigi end error: {e}")
 
-        ui_safe(set_playing_status, "???啗??剜𦆮摰峕?")
+        ui_safe(set_playing_status, "✅ 台語播放完成")
     finally:
         if relay_acquired:
             relay_release("taigi_play_wav_with_fx")
-        text_area_insert(f"???啗??剜𦆮靘见?嚗㝯e}")
+        text_area_insert(f"❌ 台語播放例外：{e}")
 
 def tts_full_play(text, force_chime_off=False): asyncio.run(speak_text_async(text, force_chime_off))
 
 
 
-# ===== Piper (?Ｙ? TTS) 閮剖? =====
+# ===== Piper (離線 TTS) 設定 =====
 
 PIPER_CFG_PATH = Path(DATA_DIR) / "piper.json"
-PIPER_CFG = {} # ?典?閮剖?敹怠?
-PIPER_FORCE = False  # ?誯??�誘?冽?撘瑕� Piper ?芸?嚗�? handle_msg嚗?
+PIPER_CFG = {} # 全域設定快取
+PIPER_FORCE = False  # 透過指令臨時強制 Piper 優先（見 handle_msg）
 
 
 
@@ -4450,7 +4447,7 @@ def _piper_load_cfg():
 
         
 
-        # 撽𡑒??Ｘ?頝臬??臬炏?㗇?嚗𣬚�?�??齿?
+        # 驗證既有路徑是否有效，無效則重搜
 
         exe = j.get("piper_exe") or ""
 
@@ -4594,13 +4591,13 @@ def _piper_match_model(lang_code: str) -> str:
 
 def _piper_run_to_wav(text: str, out_wav: str, lang_code: str = None) -> tuple[bool, str]:
 
-    # ?躰ㄐ?�虾?冽�扳炎?亦?敺格𦆮撖穿??芾???exe 撠梢�嗘?甇亙?蝞烾�𡁻?嚗峕芋?见??Ｗ?靘�𪄳
+    # 這裡的可用性檢查稍微放寬：只要有 exe 就這一步先算通過，模型後面再來找
 
     exe = PIPER_CFG.get("piper_exe") or ""
 
     if not (exe and os.path.isfile(exe)):
 
-        return (False, "piper.exe ?芸停蝺?)
+        return (False, "piper.exe 未就緒")
 
 
 
@@ -4608,13 +4605,13 @@ def _piper_run_to_wav(text: str, out_wav: str, lang_code: str = None) -> tuple[b
 
     
 
-    # 瘙箏?雿輻鍂?芸�𧢲芋??
+    # 決定使用哪個模型
 
     use_model = default_model
 
     if lang_code:
 
-        # ?𡑒岫?曉??㕑?閮�?�芋??
+        # 嘗試找對應語言的模型
 
         found = _piper_match_model(lang_code)
 
@@ -4622,13 +4619,13 @@ def _piper_run_to_wav(text: str, out_wav: str, lang_code: str = None) -> tuple[b
 
             use_model = found
 
-            # ?交𪄳?啁?璅∪?頝罸?閮凋??䕘??臬銁 log ?鞟內嚗��?剁?
+            # 若找到的模型跟預設不同，可在 log 提示（選用）
 
     
 
     if not (use_model and os.path.isfile(use_model)):
 
-        return (False, f"?芣𪄳?啣虾?冽芋??(lang={lang_code}, default={default_model})")
+        return (False, f"未找到可用模型 (lang={lang_code}, default={default_model})")
 
 
 
@@ -4636,7 +4633,7 @@ def _piper_run_to_wav(text: str, out_wav: str, lang_code: str = None) -> tuple[b
 
     if not os.path.isfile(use_model + ".json"):
 
-        return (False, f"璅∪?閮剖?瑼娪�憭? {use_model}.json")
+        return (False, f"模型設定檔遺失: {use_model}.json")
 
 
 
@@ -4656,7 +4653,7 @@ def _piper_run_to_wav(text: str, out_wav: str, lang_code: str = None) -> tuple[b
 
     if spk:
 
-        # 瘜冽?嚗朞𥅾?�?璅∪?嚗�? speaker ID ?航�銝漤�?剁??躰ㄐ?急?靽萘?
+        # 注意：若切換模型，原 speaker ID 可能不適用，這裡暫時保留
 
         cmd += ["--speaker", spk]
 
@@ -4707,24 +4704,24 @@ async def speak_text_async(text, force_chime_off=False):
     relay_acquired = False
     try:
         should_chime = CHIME_ENABLED and (not force_chime_off)
-        # ?? Debug Chime to UI Area
+        # 🆕 Debug Chime to UI Area
         msg = f"[DEBUG] speak_text_async: CHIME={should_chime} (EF={CHIME_ENABLED}), START={os.path.basename(START_SOUND) if START_SOUND else 'None'}, END={os.path.basename(END_SOUND) if END_SOUND else 'None'}"
         text_area_insert(msg, "TTS")
         
         if should_chime:
             if not (START_SOUND and os.path.exists(START_SOUND)):
-                text_area_insert(f"?𩤃? ?滚??單?獢�?摮睃銁: {START_SOUND}", "TTS")
+                text_area_insert(f"⚠️ 前導音檔案不存在: {START_SOUND}", "TTS")
             if not (END_SOUND and os.path.exists(END_SOUND)):
-                text_area_insert(f"?𩤃? 蝯鞉??單?獢�?摮睃銁: {END_SOUND}", "TTS")
+                text_area_insert(f"⚠️ 結束音檔案不存在: {END_SOUND}", "TTS")
         # Parse Per-Message Metadata: {{L=xx|G=xx}}text
         local_lang = None
         local_gender = None
         
         # [Safety] Strip sender tag if present (e.g. "@API_V2: ...")
-        # Matches "@Tag: " or "@Tag嚗?" at start
+        # Matches "@Tag: " or "@Tag： " at start
         if text.startswith("@"):
             import re
-            text = re.sub(r"^@[\w_]+[:嚗鞲\s*", "", text)
+            text = re.sub(r"^@[\w_]+[:：]\s*", "", text)
 
         if text.startswith("{{") and "}}" in text:
             try:
@@ -4739,10 +4736,10 @@ async def speak_text_async(text, force_chime_off=False):
                         if k == "C" and v == "off": force_chime_off = True
             except Exception: pass
 
-        stop_playback_event.clear()  # ?鞾�?滚?撠𡡞𨺗鋡急??嗵??𨀣迫?埈??𤘪𪃾
+        stop_playback_event.clear()  # ←避免前導音被殘留的停止旗標打斷
         if stop_playback_event.is_set() or voice_muted:
             return
-        ui_safe(set_playing_status, " ?𡑒?銝哨?")
+        ui_safe(set_playing_status, " 朗讀中：")
         ui_safe(_set_progress, 0); STATE["progress"] = 0
 
         # [Fix] Unified Rate Fetching
@@ -4758,7 +4755,7 @@ async def speak_text_async(text, force_chime_off=False):
 
 
 
-        # ?啗?頝臬?嚗帋漱蝯血??典遆撘𤩺偘?橘??踹??滩??滚?/蝯鞉???
+        # 台語路徑：交給專用函式播放，避免重複前導/結束音
 
         if is_taigi:
 
@@ -4772,14 +4769,14 @@ async def speak_text_async(text, force_chime_off=False):
 
         if PIPER_FORCE and _piper_available():
             try:
-                ui_safe(set_playing_status, "?? ?𡑒?銝?(Piper Force)...")
+                ui_safe(set_playing_status, "🔊 朗讀中 (Piper Force)...")
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as fp:
                     wav_path = fp.name
 
                 ok, log = _piper_run_to_wav(text, wav_path, lang_code=lang)
 
                 if not ok:
-                    text_area_insert(f"??Piper ?�?憭望?嚗Êorce嚗㚁?{log}", "TTS")
+                    text_area_insert(f"❌ Piper 合成失敗（force）：{log}", "TTS")
                 else:
                     # [Chime] Piper Force
                     if should_chime and START_SOUND and os.path.isfile(START_SOUND):
@@ -4787,7 +4784,7 @@ async def speak_text_async(text, force_chime_off=False):
                          play_sound(START_SOUND, ignore_interrupt=True, wait=False)
                          await asyncio.sleep(1.0)
                     play_sound(wav_path)
-                    # [Safety] 撱園�?芷膄
+                    # [Safety] 延遲刪除
                     def delayed_cleanup(p):
                         try:
                             import time
@@ -4802,11 +4799,11 @@ async def speak_text_async(text, force_chime_off=False):
                                 play_sound(END_SOUND, ignore_interrupt=True)
                         except Exception:
                             pass
-                        ui_safe(set_playing_status, "???𡑒?摰峕?嚗㇊iper ?Ｙ?嚚𠨑orce嚗?)
+                        ui_safe(set_playing_status, "✅ 朗讀完成（Piper 離線｜force）")
                     return
 
             except Exception as e:
-                text_area_insert(f"??Piper force 靘见?嚗㝯e}", "TTS")
+                text_area_insert(f"❌ Piper force 例外：{e}", "TTS")
 
 
         # 1. Azure Speech SDK (Official) - Highest Priority if configured
@@ -4814,9 +4811,9 @@ async def speak_text_async(text, force_chime_off=False):
         azure_region = os.environ.get("AZURE_SPEECH_REGION") or STATE.get("azure_speech_region")
         
         if TRIAL_EXPIRED:
-            text_area_insert("?𩤃? 閰衣鍂?笔歇?𠬍??��雿輻鍂 gTTS ?蹱螱", "TTS")
+            text_area_insert("⚠️ 試用期已過，僅能使用 gTTS 備援", "TTS")
         elif azure_key and azure_region:
-            ui_safe(set_playing_status, "?? ?𡑒?銝?(Azure TTS)...")
+            ui_safe(set_playing_status, "🔊 朗讀中 (Azure TTS)...")
             try:
                 import azure.cognitiveservices.speech as speechsdk
                 
@@ -4845,7 +4842,7 @@ async def speak_text_async(text, force_chime_off=False):
                          await asyncio.sleep(1.0)
                          
                     play_sound(wav_path)
-                    # [Safety] 撱園�?芷膄
+                    # [Safety] 延遲刪除
                     def delayed_cleanup(p):
                         try:
                             import time
@@ -4858,16 +4855,16 @@ async def speak_text_async(text, force_chime_off=False):
                             if should_chime and os.path.exists(END_SOUND):
                                 play_sound(END_SOUND, ignore_interrupt=True)
                         except: pass
-                        ui_safe(set_playing_status, f"???𡑒?摰峕?嚗㇁zure Official: {v_azure}嚗?)
+                        ui_safe(set_playing_status, f"✅ 朗讀完成（Azure Official: {v_azure}）")
                     return
                 else:
                     cancellation_details = result.cancellation_details
-                    text_area_insert(f"?𩤃? Azure Speech 憭望?嚗㝯cancellation_details.reason} - {cancellation_details.error_details}", "TTS")
+                    text_area_insert(f"⚠️ Azure Speech 失敗：{cancellation_details.reason} - {cancellation_details.error_details}", "TTS")
 
             except ImportError:
-                 text_area_insert("?𩤃? ?芸?鋆?azure-cognitiveservices-speech嚗諹歲??Azure 摰䀹䲮頝臬?", "TTS")
+                 text_area_insert("⚠️ 未安裝 azure-cognitiveservices-speech，跳過 Azure 官方路徑", "TTS")
             except Exception as e:
-                 text_area_insert(f"?𩤃? Azure Speech 靘见?嚗㝯e}", "TTS")
+                 text_area_insert(f"⚠️ Azure Speech 例外：{e}", "TTS")
 
 
         # Edge TTS Logic
@@ -4903,7 +4900,7 @@ async def speak_text_async(text, force_chime_off=False):
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
                         mp3_path = fp.name
                     
-                    ui_safe(set_playing_status, f"?? ?𡑒?銝?(EdgeTTS: {v})...")
+                    ui_safe(set_playing_status, f"🔊 朗讀中 (EdgeTTS: {v})...")
                     
                     if r is not None:
                         tts = edge_tts.Communicate(text=text, voice=v, rate=r, volume='+50%')
@@ -4932,7 +4929,7 @@ async def speak_text_async(text, force_chime_off=False):
                          play_fx(START_SOUND, ignore_interrupt=True)
                          await asyncio.sleep(0.6)
                     play_sound(mp3_path)
-                    # [Safety] 撱園�?芷膄嚗諹? Web client ?㗇??㮖?頛?
+                    # [Safety] 延遲刪除，讓 Web client 有時間下載
                     def delayed_cleanup(p):
                         try:
                             time.sleep(10)
@@ -4946,7 +4943,7 @@ async def speak_text_async(text, force_chime_off=False):
                                 play_sound(END_SOUND, ignore_interrupt=True)
                         except Exception:
                             pass
-                        ui_safe(set_playing_status, f"???𡑒?摰峕?嚗ùv}{'' if r is None else f', {r}'}嚗?)
+                        ui_safe(set_playing_status, f"✅ 朗讀完成（{v}{'' if r is None else f', {r}'}）")
                         STATE["edge_tts_fails"] = 0
                     return
 
@@ -4963,7 +4960,7 @@ async def speak_text_async(text, force_chime_off=False):
                                  with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
                                     mp3_path = fp.name
                                  
-                                 ui_safe(set_playing_status, f"?? ?𡑒?銝?(EdgeTTS Unverified: {v})...")
+                                 ui_safe(set_playing_status, f"🔊 朗讀中 (EdgeTTS Unverified: {v})...")
                                  if r is not None:
                                      tts = edge_tts.Communicate(text=text, voice=v, rate=r, volume='+50%')
                                  else:
@@ -4979,7 +4976,7 @@ async def speak_text_async(text, force_chime_off=False):
                                  except: pass
 
                                  if not (stop_playback_event.is_set() or voice_muted):
-                                     ui_safe(set_playing_status, f"???𡑒?摰峕?嚗㇎nverified SSL: {v}嚗?)
+                                     ui_safe(set_playing_status, f"✅ 朗讀完成（Unverified SSL: {v}）")
                                      STATE["edge_tts_fails"] = 0
                                  return # Success
                              finally:
@@ -4988,7 +4985,7 @@ async def speak_text_async(text, force_chime_off=False):
                              print(f"[EdgeTTS] Retry failed: {e2}")
 
                     reason = str(e)
-                    text_area_insert(f"?𩤃? Edge TTS 憭望?嚗ǒoice={v}, rate={r}嚗㚁?{reason}", "TTS")
+                    text_area_insert(f"⚠️ Edge TTS 失敗（voice={v}, rate={r}）：{reason}", "TTS")
                     continue
 
 
@@ -4997,7 +4994,7 @@ async def speak_text_async(text, force_chime_off=False):
 
         # 2nd Priority: gTTS
 
-        text_area_insert("?對? Edge TTS 銝滚虾?剁?頧厩鍂 gTTS ?蹱螱??, "TTS")
+        text_area_insert("ℹ️ Edge TTS 不可用，轉用 gTTS 備援…", "TTS")
 
         try:
 
@@ -5047,7 +5044,7 @@ async def speak_text_async(text, force_chime_off=False):
                      time.sleep(0.5)
                 play_sound(tmp)
 
-            # [Safety] 撱園�?芷膄
+            # [Safety] 延遲刪除
             def delayed_cleanup(p):
                 try:
                     time.sleep(10)
@@ -5067,13 +5064,13 @@ async def speak_text_async(text, force_chime_off=False):
 
                     pass
 
-                ui_safe(set_playing_status, "???𡑒?摰峕?嚗āTTS ?蹱螱嚗?)
+                ui_safe(set_playing_status, "✅ 朗讀完成（gTTS 備援）")
 
             return
 
         except Exception as e:
 
-            text_area_insert(f"??gTTS ?蹱螱憭望?嚗㝯e}嚗�?閰?Piper...", "TTS")
+            text_area_insert(f"❌ gTTS 備援失敗：{e}，嘗試 Piper...", "TTS")
 
             pass
 
@@ -5092,7 +5089,7 @@ async def speak_text_async(text, force_chime_off=False):
 
 
         if not TRIAL_EXPIRED and _piper_available():
-            text_area_insert(f"?對? gTTS 銝滚虾?剁?頧厩鍂 Piper ?蹱螱??, "TTS")
+            text_area_insert(f"ℹ️ gTTS 不可用，轉用 Piper 備援…", "TTS")
             try:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as fp:
                     wav_path = fp.name
@@ -5114,7 +5111,7 @@ async def speak_text_async(text, force_chime_off=False):
                          play_fx(START_SOUND, ignore_interrupt=True)
                          time.sleep(0.5)
                     play_sound(wav_path)
-                    # [Safety] 撱園�?芷膄
+                    # [Safety] 延遲刪除
                     def delayed_cleanup(p):
                         try:
                             import time
@@ -5128,17 +5125,17 @@ async def speak_text_async(text, force_chime_off=False):
                                 play_sound(END_SOUND, ignore_interrupt=True)
                         except Exception:
                             pass
-                        ui_safe(set_playing_status, "???𡑒?摰峕?嚗㇊iper ?Ｙ?嚗?)
+                        ui_safe(set_playing_status, "✅ 朗讀完成（Piper 離線）")
                     return
                 else:
-                    text_area_insert(f"??Piper ?�?憭望?嚗㝯log}", "TTS")
+                    text_area_insert(f"❌ Piper 合成失敗：{log}", "TTS")
             except Exception as e:
-                text_area_insert(f"??Piper 靘见?嚗㝯e}", "TTS")
+                text_area_insert(f"❌ Piper 例外：{e}", "TTS")
         else:
              # Debug info for user
-             pe = PIPER_CFG.get("piper_exe") or "?芾身摰?
-             pm = PIPER_CFG.get("model") or "?芾身摰?
-             text_area_insert(f"?𩤃? Piper 撠𡁏𧊋撠梁?嚗𠄌xe: {pe}, Model: {pm}嚗?, "TTS")
+             pe = PIPER_CFG.get("piper_exe") or "未設定"
+             pm = PIPER_CFG.get("model") or "未設定"
+             text_area_insert(f"⚠️ Piper 尚未就緒（Exe: {pe}, Model: {pm}）", "TTS")
 
 
 
@@ -5150,7 +5147,7 @@ async def speak_text_async(text, force_chime_off=False):
 
             if not (stop_playback_event.is_set() or voice_muted):
 
-                ui_safe(set_playing_status, "???𡑒?摰峕?嚗𠄎API5 ?Ｙ?嚗?)
+                ui_safe(set_playing_status, "✅ 朗讀完成（SAPI5 離線）")
 
             return
 
@@ -5160,7 +5157,7 @@ async def speak_text_async(text, force_chime_off=False):
 
 
 
-        ui_safe(set_playing_status, "???𡑒?憭望?")
+        ui_safe(set_playing_status, "❌ 朗讀失敗")
 
         ui_safe(_set_progress, 0); STATE["progress"] = 0
 
@@ -5168,15 +5165,15 @@ async def speak_text_async(text, force_chime_off=False):
 
     except Exception as e:
 
-        print("隤鮋𨺗?�?憭望?嚗?, e)
+        print("語音合成失敗：", e)
 
-        ui_safe(set_playing_status, "???𡑒?憭望?")
+        ui_safe(set_playing_status, "❌ 朗讀失敗")
 
         ui_safe(_set_progress, 0); STATE["progress"] = 0
     finally:
         if relay_acquired:
             import datetime as _dt
-            print(f"[RELY] [{get_now().strftime('%H:%M:%S.%f')[:-3]}] speak_text_async FINALLY: calling relay_release (relay_acquired={relay_acquired})")
+            print(f"[RELY] [{_dt.datetime.now().strftime('%H:%M:%S.%f')[:-3]}] speak_text_async FINALLY: calling relay_release (relay_acquired={relay_acquired})")
             relay_release("speak_text_async")
 
 
@@ -5205,7 +5202,7 @@ def speech_worker():
 
 # ===============================
 
-# == [ANCHOR] 蝬脰楝撌亙� ==
+# == [ANCHOR] 網路工具 ==
 
 # ===============================
 
@@ -5219,17 +5216,17 @@ def get_local_ip():
 
         ip = s.getsockname()[0]; s.close(); return ip
 
-    except: return "?⊥??硋? IP"
+    except: return "無法取得 IP"
 
 
 
 # ===============================
 
-# == [ANCHOR] QR ?函?撠讛?蝒?==
+# == [ANCHOR] QR 獨立小視窗 ==
 
 # ===============================
 
-_qr_popup_refs = []  # ?脫迫敶勗?鋡怠??曉???
+_qr_popup_refs = []  # 防止影像被垃圾回收
 
 
 
@@ -5239,7 +5236,7 @@ def show_qr_popup(title_text: str, url_text: str):
 
         try:
 
-            messagebox.showinfo(title_text, f"URL嚗㝯url_text}\n\n嚗�𧊋摰㕑? qrcode/Pillow嚗𣬚�瘜閖＊蝷?QR嚗?)
+            messagebox.showinfo(title_text, f"URL：{url_text}\n\n（未安裝 qrcode/Pillow，無法顯示 QR）")
 
         except Exception:
 
@@ -5257,7 +5254,7 @@ def show_qr_popup(title_text: str, url_text: str):
 
     win.resizable(False, False)
 
-    # ?Ｙ? QR
+    # 產生 QR
 
     try:
 
@@ -5271,7 +5268,7 @@ def show_qr_popup(title_text: str, url_text: str):
 
     except Exception as e:
 
-        tk.Label(win, text=f"QR ?�?憭望?嚗㝯e}", bg=THEME["bg_card"], fg="#EF4444").pack(padx=16, pady=12)
+        tk.Label(win, text=f"QR 生成失敗：{e}", bg=THEME["bg_card"], fg="#EF4444").pack(padx=16, pady=12)
 
 
 
@@ -5291,7 +5288,7 @@ def show_qr_popup(title_text: str, url_text: str):
 
             root.clipboard_clear(); root.clipboard_append(url_text)
 
-            messagebox.showinfo("撌脰?鋆?, "URL 撌脰?鋆賢�?芾票蝪?)
+            messagebox.showinfo("已複製", "URL 已複製到剪貼簿")
 
         except Exception: pass
 
@@ -5301,17 +5298,17 @@ def show_qr_popup(title_text: str, url_text: str):
 
         except Exception: pass
 
-    tk.Button(btns, text="銴�ˊ URL", command=_copy, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="left", padx=6)
+    tk.Button(btns, text="複製 URL", command=_copy, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="left", padx=6)
 
-    tk.Button(btns, text="?函�讛汗?券???, command=_open, bg="#D1FAE5", relief="flat", font=THEME["font_s"]).pack(side="left", padx=6)
+    tk.Button(btns, text="用瀏覽器開啟", command=_open, bg="#D1FAE5", relief="flat", font=THEME["font_s"]).pack(side="left", padx=6)
 
-    tk.Button(btns, text="?𣈯?", command=win.destroy, bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="left", padx=6)
+    tk.Button(btns, text="關閉", command=win.destroy, bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="left", padx=6)
 
 
 
 # ===============================
 
-# == [ANCHOR] ?滨垢 URL + QR ==
+# == [ANCHOR] 前端 URL + QR ==
 
 # ===============================
 
@@ -5323,7 +5320,7 @@ def compute_frontend_url() -> str:
 
         ip = get_local_ip()
 
-        if not ip or "?⊥??硋?" in ip:
+        if not ip or "無法取得" in ip:
 
             ip = "127.0.0.1"
 
@@ -5345,7 +5342,7 @@ def open_frontend_and_qr_popup():
 
         try:
 
-            messagebox.showwarning("?滨垢?芸???, "?桀?閮剖???DISABLE_WEB=True嚗峕𧊋?笔? Flask 隡箸??具�?)
+            messagebox.showwarning("前端未啟動", "目前設定為 DISABLE_WEB=True，未啟動 Flask 伺服器。")
 
         except Exception:
 
@@ -5359,19 +5356,19 @@ def open_frontend_and_qr_popup():
 
         webbrowser.open(url)
 
-        ui_safe(ngrok_status_label.config, text=f" ?滨垢嚗㝯url}")
+        ui_safe(ngrok_status_label.config, text=f" 前端：{url}")
 
     except Exception:
 
         pass
 
-    show_qr_popup("?滨垢蝬脣? QR", url)
+    show_qr_popup("前端網址 QR", url)
 
 
 
 # ===============================
 
-# == [ANCHOR] CSV 蝝�??==
+# == [ANCHOR] CSV 紀錄 ==
 
 # ===============================
 
@@ -5385,7 +5382,7 @@ def save_to_csv(message, sender="", relay_status=None, ip=None):
 
         return
 
-    today = get_now().strftime("%Y-%m-%d"); filename = os.path.join(DATA_DIR, f"log_{today}.csv")
+    today = datetime.now().strftime("%Y-%m-%d"); filename = os.path.join(DATA_DIR, f"log_{today}.csv")
 
     os.makedirs(DATA_DIR, exist_ok=True)
 
@@ -5393,7 +5390,7 @@ def save_to_csv(message, sender="", relay_status=None, ip=None):
 
         csv.writer(f).writerow([
 
-            get_now().strftime("%H:%M:%S"), sender, msg, (relay_status or "N/A"), (ip or "")
+            datetime.now().strftime("%H:%M:%S"), sender, msg, (relay_status or "N/A"), (ip or "")
 
         ])
 
@@ -5401,29 +5398,29 @@ def save_to_csv(message, sender="", relay_status=None, ip=None):
 
 # ===============================
 
-# == [ANCHOR] ?啗? TTS (itaigi ??gTTS ?蹱螱) ==
+# == [ANCHOR] 台語 TTS (itaigi → gTTS 備援) ==
 
 # ===============================
 
 
 
 # ===============================
-# == [ANCHOR] ?啗? TTS (itaigi ??gTTS ?蹱螱) ==
+# == [ANCHOR] 台語 TTS (itaigi → gTTS 備援) ==
 # ===============================
 
 def generate_taigi_tts(text, gender=None, speed_percent=None):
     """
-    ?Ｙ??啗?隤鮋𨺗瑼?(銝齿偘???�芋隞?taigi_edu.html 撠�鍂璅∠??孵? (model6)??
-    ?𧼮�: 瑼娍?蝯訫?頝臬?
+    產生台語語音檔 (不播放)。模仿 taigi_edu.html 專用模組方式 (model6)。
+    回傳: 檔案絕對路徑
     """
-    # 瘙箏??脣ê̌
+    # 決定聲別
     if gender:
         v_mode = "f" if str(gender).startswith("f") else "m"
     else:
         g = globals().get("voice_gender") or "female"
         v_mode = "f" if g.startswith("f") else "m"
 
-    # 瘙箏?隤鮋�?
+    # 決定語速
     speed = 1.0
     if speed_percent is not None:
         speed = float(speed_percent)
@@ -5436,7 +5433,7 @@ def generate_taigi_tts(text, gender=None, speed_percent=None):
             except: pass
     
     try:
-        # ?澆㙈擃㗛𨺗鞈芸??鞾?頛?(撌脖葡??TaigiTTSClient)
+        # 呼叫高音質合成邏輯 (已串接 TaigiTTSClient)
         result = _taigi_generate_audio_file(text, v_mode, speed=speed)
         fname = result.get("file")
         if fname:
@@ -5447,12 +5444,12 @@ def generate_taigi_tts(text, gender=None, speed_percent=None):
 
 
 def play_taigi_tts(text):
-    """甇方?璅∩遛 taigi_edu.html ?��𣬚䔄?脫芋蝯��齿䲮撘𧶏?擃㗛𨺗鞈芸???+ ?湔𦻖撱?偘??""
+    """此處模仿 taigi_edu.html 的「發聲模組」方式：高音質合成 + 直接廣播。"""
     try:
-        # ?芸??菜葫?臬炏?�閬�蕃霅?(?交?摮㛖�?贝??�?頧匧蝱隤痹?璅∩遛?躰�璅∠?瘚�?)
+        # 自動偵測是否需要翻譯 (若文字為國語則先轉台語，模仿教育模組流程)
         def _is_mostly_mandarin(t):
-            # 蝪∪鱓?文?嚗朞𥅾?∪蝱隤䂿鸌?㗇慰摮?蝚西?銝娍糓銝剜?嚗�??𡑒岫蝧餉陌
-            taigi_markers = ["??,"??,"??,"靽?,"銋?,"??,"??,"??,"??,"??,"??,"??,"摨?,"??,"??,"??,"瘥?,"鋡?,"礙"]
+            # 簡單判定：若無台語特有漢字/符號且是中文，則嘗試翻譯
+            taigi_markers = ["嘅","哋","冇","係","乜","啦","咩","啫","㗎","呢","咗","喺","度","領","閣","咧","毋","袂","ê"]
             for m in taigi_markers:
                 if m in t: return False
             return True
@@ -5460,8 +5457,8 @@ def play_taigi_tts(text):
         processed_text = text
         if _is_mostly_mandarin(text):
             try:
-                # ?澆㙈蝧餉陌 API (zh2nan)
-                # 雿輻鍂撌脫??讛摩嚗�?閮?API Key 甇?Ⅱ
+                # 呼叫翻譯 API (zh2nan)
+                # 使用已有邏輯，假設 API Key 正確
                 headers = {"x-api-key": TAIGI_TRANSLATE_API_KEY, "Content-Type":"application/json"}
                 payload = {"inputText": text, "inputLan": "zhtw", "outputLan": "tw"}
                 r = _post_with_fallback(TAIGI_TRANSLATE_ENDPOINTS, headers, payload, timeout=10)
@@ -5480,7 +5477,7 @@ def play_taigi_tts(text):
             taigi_play_wav_with_fx(path)
             
     except Exception as e:
-        text_area_insert(f"?𩤃? ?啗?撱?偘憭望?嚗㝯e}", "TTS")
+        text_area_insert(f"⚠️ 台語廣播失敗：{e}", "TTS")
 
 
 @app.route('/download/<path:filename>')
@@ -5499,7 +5496,7 @@ def download_file(filename):
 
 # ===============================
 
-# == [ANCHOR] ?刻攟撟閗???==
+# == [ANCHOR] 全螢幕訊息 ==
 
 # ===============================
 
@@ -5531,11 +5528,11 @@ def show_fullscreen_message(msg):
 
     frame = tk.Frame(fs_win, bg="#0F172A"); frame.pack(expand=True, fill="both")
 
-    tk.Label(frame, text=" 蝺𦠜�亥??舫�𡁶䰻", font=("Microsoft JhengHei UI", 44, "bold"), fg="#38BDF8", bg="#0F172A").pack(pady=(90,40))
+    tk.Label(frame, text=" 緊急訊息通知", font=("Microsoft JhengHei UI", 44, "bold"), fg="#38BDF8", bg="#0F172A").pack(pady=(90,40))
 
     tk.Label(frame, text=msg, font=("Microsoft JhengHei UI", 36, "bold"), fg="#F8FAFC", bg="#0F172A", wraplength=1400, justify="center").pack(expand=True)
 
-    tk.Label(frame, text="嚗�??𨳍��?隞餅??菜???Esc ?𣈯?嚗?, font=("Microsoft JhengHei UI", 22), fg="#94A3B8", bg="#0F172A").pack(pady=(40,30))
+    tk.Label(frame, text="（點擊、按任意鍵或按 Esc 關閉）", font=("Microsoft JhengHei UI", 22), fg="#94A3B8", bg="#0F172A").pack(pady=(40,30))
 
     fs_win.focus_force(); fs_win.grab_set(); fs_win.lift()
 
@@ -5543,14 +5540,14 @@ def show_fullscreen_message(msg):
 
 # ===============================
 
-# == [ANCHOR] 隤脰”嚗�????垍?/閫貊䔄嚗?==
+# == [ANCHOR] 課表（載入/排程/觸發） ==
 
 # ===============================
 
 TIMETABLE_PATH = os.path.join(_BASE_FOR_TT, "timetable.json")
 
 # ==========================================================
-#  敹恍��?隞?-> ?祆??單??惩?銵?(?湔𦻖?剜𦆮,銝滩粥 audio_proxy)
+#  快速指令 -> 本機音檔映射表 (直接播放,不走 audio_proxy)
 # ==========================================================
 
 # ==========================================================
@@ -5702,11 +5699,11 @@ def _load_timetable_from_disk():
 
                 "items": [
 
-                    {"dow":1, "time":"07:58", "action":"Bell:ClassStart", "label":"銝𡃏玨??},
+                    {"dow":1, "time":"07:58", "action":"Bell:ClassStart", "label":"上課鈴"},
 
-                    {"dow":1, "time":"08:00", "action":"ShowMsg:?拙?嚗�?摮詨�𡢅?", "label":"閮𦠜�"},
+                    {"dow":1, "time":"08:00", "action":"ShowMsg:早安，同學們！", "label":"訊息"},
 
-                    {"dow":1, "time":"10:00", "action":"PlayMP3:Award.mp3", "label":"?垍??單?"},
+                    {"dow":1, "time":"10:00", "action":"PlayMP3:Award.mp3", "label":"頒獎音樂"},
 
                 ]
 
@@ -5720,7 +5717,7 @@ def _load_timetable_from_disk():
 
     except Exception as e:
 
-        text_area_insert(f"??頛匧�閬誩?隞餃?憭望?嚗㝯e}")
+        text_area_insert(f"❌ 載入規律任務失敗：{e}")
 
     timetable_data = data
 
@@ -5748,11 +5745,11 @@ def _load_timetable_from_disk():
 
     if 'timetable_status_var' in globals():
 
-        ui_safe(timetable_status_var.set, f" 閬誩?隞餃?嚗㝯'?毺鍂' if timetable_enabled else '?𦦵鍂'}嚗�歇頛匧� {STATE['timetable']['count']} 蝑?)
+        ui_safe(timetable_status_var.set, f" 規律任務：{'啟用' if timetable_enabled else '停用'}，已載入 {STATE['timetable']['count']} 筆")
 
     if 'timetable_path_var' in globals():
 
-        ui_safe(lambda: timetable_path_var.set(f"頝臬?嚗㝯STATE['timetable']['path']}"))
+        ui_safe(lambda: timetable_path_var.set(f"路徑：{STATE['timetable']['path']}"))
 
     if 'refresh_timetable_tree' in globals():
 
@@ -5794,13 +5791,13 @@ def _parse_hhmm_to_minutes(s: str) -> int | None:
 
 def compute_next_ring(now_dt=None):
 
-    if now_dt is None: now_dt = get_now()
+    if now_dt is None: now_dt = datetime.now()
 
     if not timetable_data.get("items"): return None
 
     for day_offset in range(0, 14):
 
-        d = (now_dt.date() if hasattr(now_dt, "date") else get_now().date()) + timedelta(days=day_offset)
+        d = (now_dt.date() if hasattr(now_dt, "date") else date.today()) + timedelta(days=day_offset)
 
         if _is_holiday(d): continue
 
@@ -5866,19 +5863,19 @@ def update_next_label():
 
         if not timetable_enabled:
 
-            ui_safe(timetable_next_var.set, " 銝衤?甈∴??䈑??芸??剖𥼚?𣈯?嚗?); return
+            ui_safe(timetable_next_var.set, " 下一次：—（自動播報關閉）"); return
 
         nxt = compute_next_ring()
 
         if not nxt:
 
-            ui_safe(timetable_next_var.set, " 銝衤?甈∴???)
+            ui_safe(timetable_next_var.set, " 下一次：—")
 
         else:
 
             ymd, hhmm, label = nxt
 
-            disp = f" 銝衤?甈∴?{ymd} {hhmm}" + (f"嚚画label}" if label else "")
+            disp = f" 下一次：{ymd} {hhmm}" + (f"｜{label}" if label else "")
 
             ui_safe(timetable_next_var.set, disp)
 
@@ -5888,9 +5885,9 @@ def update_next_label():
 
 
 
-def _now_hhmm() -> str: return get_now().strftime("%H:%M")
+def _now_hhmm() -> str: return datetime.now().strftime("%H:%M")
 
-def _today_str() -> str: return get_now().strftime("%Y-%m-%d")
+def _today_str() -> str: return datetime.now().strftime("%Y-%m-%d")
 
 def _sender_ip_from_addr(addr) -> str | None:
 
@@ -5902,7 +5899,7 @@ def _trigger_action(action: str, label: str = "", src: str = "Timetable", idx: i
 
     sender = f"{src}{'' if idx is None else '#'+str(idx)}"
 
-    text_area_insert(f" 閬誩?隞餃?閫貊䔄嚗ùsender}嚗㚁?{label or action}")
+    text_area_insert(f" 規律任務觸發（{sender}）：{label or action}")
 
     save_to_csv(f"Schedule:{label or action}", sender)
 
@@ -5912,7 +5909,7 @@ def _trigger_action(action: str, label: str = "", src: str = "Timetable", idx: i
 
     except Exception as e:
 
-        text_area_insert(f"??閬誩?隞餃?閫貊䔄憭望?嚗㝯e}")
+        text_area_insert(f"❌ 規律任務觸發失敗：{e}")
 
 
 
@@ -5936,7 +5933,7 @@ def timetable_scheduler_loop():
 
             if timetable_enabled and timetable_data.get("items"):
 
-                today = get_now().date()
+                today = date.today()
 
                 if not _is_holiday(today):
 
@@ -5976,7 +5973,7 @@ def timetable_scheduler_loop():
 
         except Exception as e:
 
-            text_area_insert(f"?𩤃? 閬誩?隞餃??垍??券𥲤隤歹?{e}")
+            text_area_insert(f"⚠️ 規律任務排程器錯誤：{e}")
 
         time.sleep(TIMETABLE_SCAN_SEC)
 
@@ -5994,11 +5991,11 @@ def timetable_play_index(idx: int):
 
             return
 
-    text_area_insert(f"?𩤃? 閬誩?隞餃?蝝Ｗ?頞�枂蝭�?嚗㝯idx}")
+    text_area_insert(f"⚠️ 規律任務索引超出範圍：{idx}")
 
 
 
-# ===== ?脫迫?滨垢/敺𣬚垢?峕??䭾?敺芰兛?鮋��??餅?/?駁?嚗?=====
+# ===== 防止前端/後端同機造成循環回送（去抖/去重） =====
 
 _DEDUP_LOCK = threading.RLock()
 
@@ -6012,7 +6009,7 @@ def _is_duplicate_message(sender_ip: str | None, text: str) -> bool:
 
     t = (text or "").strip()
 
-    # ?刻攟撟閗??荔??急偘???𣈯𨺗嚗劐??𡁜縧?㵪??踹?????厰?鋡怠蕭??
+    # 全螢幕訊息（含播報/靜音）不做去重，避免連續按鈕被忽略
 
     if t.startswith("ShowMsg:") or t.startswith("SilentMsg:"):
 
@@ -6056,7 +6053,7 @@ def _is_duplicate_message(sender_ip: str | None, text: str) -> bool:
 
 # ===============================
 
-# == [ANCHOR] ?�誘?閧? ==
+# == [ANCHOR] 指令處理 ==
 
 # ===============================
 
@@ -6079,7 +6076,7 @@ def handle_msg(text, addr):
         return
 
     # -------------------------------------------------
-    # 1儭謿� ?湔𦻖?剜𦆮?惩?銵典�?�?隞歹?銝滩粥 audio_proxy嚗?
+    # 1️⃣ 直接播放映射表內的指令（不走 audio_proxy）
     # -------------------------------------------------
     if text in CMD_SOUND_TABLE:
         rel_path = CMD_SOUND_TABLE[text]
@@ -6091,11 +6088,11 @@ def handle_msg(text, addr):
             else:
                 play_sound(abs_path)
         else:
-            print(f"[WARN] ?單?銝滚??? {abs_path}")
+            print(f"[WARN] 音檔不存在: {abs_path}")
         return
 
     # -------------------------------------------------
-    # 2儭謿� ?園? Bell / PlayMP3 ?�誘隞滩粥?�𧋦??broadcast_web_audio嚗�??躰?銵𣬚�嚗?
+    # 2️⃣ 其餘 Bell / PlayMP3 指令仍走原本的 broadcast_web_audio（保留舊行為）
     # -------------------------------------------------
     if text.startswith("Bell:") or text.startswith("PlayMP3:"):
         broadcast_web_audio(text)
@@ -6106,7 +6103,7 @@ def handle_msg(text, addr):
 
     if text.strip() == "WeatherReport":
 
-        text_area_insert(f"?嗅�瘞?情?剖𥼚隢𧢲? from {sender}")
+        text_area_insert(f"收到氣象播報請求 from {sender}")
 
         weather_text = _get_weather_report()
 
@@ -6116,7 +6113,7 @@ def handle_msg(text, addr):
 
         # Optional: insert to text area to show what is being spoken
 
-        text_area_insert(f"瘞?情?剖𥼚?批捆嚗㝯text}")
+        text_area_insert(f"氣象播報內容：{text}")
         
         # [Fix] Enqueue for playback and return (Restore Chime for weather as requested)
         if not (stop_playback_event.is_set() or voice_muted):
@@ -6135,14 +6132,14 @@ def handle_msg(text, addr):
 
         _load_timetable_from_disk()
 
-        text_area_insert(" 撌脤??啗??亥?敺衤遙??)
+        text_area_insert(" 已重新載入規律任務")
 
         return
 
 
 
     if text == "RelayRescan":
-        text_area_insert(f" ?齿鰵?�? USB 蝜潮𤓖?刻?蝵?(by {sender})")
+        text_area_insert(f" 重新掃描 USB 繼電器裝置 (by {sender})")
         threading.Thread(target=auto_detect_lcus_port, daemon=True).start()
         threading.Thread(target=auto_detect_4relay_port, daemon=True).start()
         save_to_csv("RelayRescan", sender, ip=sender_ip)
@@ -6150,7 +6147,7 @@ def handle_msg(text, addr):
 
     if text == "ScheduleEnable":
         timetable_enabled = True; STATE["timetable"]["enabled"] = True
-        if 'timetable_status_var' in globals(): ui_safe(timetable_status_var.set, " 閬誩?隞餃?嚗𡁜???)
+        if 'timetable_status_var' in globals(): ui_safe(timetable_status_var.set, " 規律任務：啟用")
         return
 
 
@@ -6159,7 +6156,7 @@ def handle_msg(text, addr):
 
         timetable_enabled = False; STATE["timetable"]["enabled"] = False
 
-        if 'timetable_status_var' in globals(): ui_safe(timetable_status_var.set, " 閬誩?隞餃?嚗𡁜???)
+        if 'timetable_status_var' in globals(): ui_safe(timetable_status_var.set, " 規律任務：停用")
 
         return
 
@@ -6175,7 +6172,7 @@ def handle_msg(text, addr):
 
         except Exception:
 
-            text_area_insert("?𩤃? SchedulePlay ?�彍?航炊")
+            text_area_insert("⚠️ SchedulePlay 參數錯誤")
 
         return
 
@@ -6183,7 +6180,7 @@ def handle_msg(text, addr):
 
     if text.startswith("YTFull:"):
 
-        text_area_insert(f"嚗�?蝷綽?隢𧢲㺿?其?頛厰𨺗閮𦠜偘?暹??典?蝡舀偘?曉膥?刻攟撟𤏪?{text}")
+        text_area_insert(f"（提示）請改用下載音訊播放或在前端播放器全螢幕：{text}")
 
         return
 
@@ -6191,9 +6188,9 @@ def handle_msg(text, addr):
 
     if text.strip() == "YTClose":
 
-        text_area_insert(" 撌脫𦻖??YTClose嚗�陛?𣇉??芰雁?�??冽偘?曉膥?�?页?")
+        text_area_insert(" 已接收 YTClose（簡化版未維持外部播放器狀態）")
 
-        set_playing_status("?對? 撌脤??匧�?Ｗ? YouTube嚗�?蝷綽?")
+        set_playing_status("⏹️ 已關閉全螢幕 YouTube（提示）")
 
         ui_safe(_set_progress, 0); STATE["progress"] = 0
 
@@ -6211,7 +6208,7 @@ def handle_msg(text, addr):
 
             auto_unmute_if_needed()  # Volume change => Unmute
 
-            text_area_insert(f" ?喲?閮剔� {STATE['volume']}%嚗�???{sender}嚗?)
+            text_area_insert(f" 音量設為 {STATE['volume']}%（來自 {sender}）")
 
             save_to_csv(f"SetVolume:{STATE['volume']}", sender, ip=sender_ip)
 
@@ -6223,11 +6220,11 @@ def handle_msg(text, addr):
 
     if text.strip() == "VolUp":
 
-        set_volume(STATE["volume"] + 5); auto_unmute_if_needed(); save_to_csv("VolUp", sender, ip=sender_ip); text_area_insert(f" ?喲?嚗贝秐 {STATE['volume']}%"); return
+        set_volume(STATE["volume"] + 5); auto_unmute_if_needed(); save_to_csv("VolUp", sender, ip=sender_ip); text_area_insert(f" 音量＋至 {STATE['volume']}%"); return
 
     if text.strip() == "VolDown":
 
-        set_volume(STATE["volume"] - 5); auto_unmute_if_needed(); save_to_csv("VolDown", sender, ip=sender_ip); text_area_insert(f" ?喲?嚗滩秐 {STATE['volume']}%"); return
+        set_volume(STATE["volume"] - 5); auto_unmute_if_needed(); save_to_csv("VolDown", sender, ip=sender_ip); text_area_insert(f" 音量－至 {STATE['volume']}%"); return
 
 
 
@@ -6237,7 +6234,7 @@ def handle_msg(text, addr):
 
         taigi_content = text.split(":", 1)[1].strip()
 
-        text_area_insert(f"儭??啗??剖𥼚嚗㝯taigi_content}")
+        text_area_insert(f"️ 台語播報：{taigi_content}")
 
         save_to_csv(f"PlayTaigi: {taigi_content}", sender, ip=sender_ip)
 
@@ -6257,7 +6254,7 @@ def handle_msg(text, addr):
 
         taigi_content = text.split("|", 1)[1].strip()
 
-        text_area_insert(f"儭??嗅�?啗?撱?偘嚗㝯taigi_content}")
+        text_area_insert(f"️ 收到台語廣播：{taigi_content}")
 
         save_to_csv(f"TaigiBroadcast: {taigi_content}", sender, ip=sender_ip)
 
@@ -6299,7 +6296,7 @@ def handle_msg(text, addr):
 
             
 
-        text_area_insert(f"?𣂼�?Ｗ??㕑�?睲???{sender}嚗㝯msg_content}")
+        text_area_insert(f"【全螢幕有聲】來自 {sender}：{msg_content}")
 
         save_to_csv(f"ShowMsg: {msg_content}", sender, ip=sender_ip)
 
@@ -6331,7 +6328,7 @@ def handle_msg(text, addr):
 
         msg_content = text.split(":", 1)[1].strip()
 
-        text_area_insert(f"?𣂼�?Ｗ??∟�?睲???{sender}嚗㝯msg_content}")
+        text_area_insert(f"【全螢幕無聲】來自 {sender}：{msg_content}")
 
         save_to_csv(f"SilentMsg: {msg_content}", sender, ip=sender_ip)
 
@@ -6347,7 +6344,7 @@ def handle_msg(text, addr):
 
         control_usb_relay("ON")
 
-        text_area_insert(f" ?嗅� RelayOn ?�誘嚗�???{sender}嚗?)
+        text_area_insert(f" 收到 RelayOn 指令（來自 {sender}）")
 
         return
 
@@ -6357,7 +6354,7 @@ def handle_msg(text, addr):
 
         control_usb_relay("OFF")
 
-        text_area_insert(f" ?嗅� RelayOff ?�誘嚗�???{sender}嚗?)
+        text_area_insert(f" 收到 RelayOff 指令（來自 {sender}）")
 
         return
 
@@ -6375,13 +6372,13 @@ def handle_msg(text, addr):
 
         relay_force_off()
 
-        set_playing_status("?對? 撌脣撥?嗅?瘨??𨀣迫")
+        set_playing_status("⏹️ 已強制取消/停止")
 
         ui_safe(_set_progress, 0); STATE["progress"] = 0
 
-        ui_safe(status_label.config, text="?對? 撌脰◤?删垢撘瑕�?𨀣迫", fg="#b31c2a")
+        ui_safe(status_label.config, text="⏹️ 已被遠端強制停止", fg="#b31c2a")
 
-        text_area_insert(f"?對? {sender} ?潮��撥?嗅?瘨�𦶢隞歹?嚗�??堒歇皜�征嚗?)
+        text_area_insert(f"⏹️ {sender} 發送強制取消命令！（佇列已清空）")
 
         save_to_csv("CancelALL", sender, ip=sender_ip)
 
@@ -6391,28 +6388,28 @@ def handle_msg(text, addr):
 
     if text.strip() == "Bell:ClassStart":
         print(f"[DEBUG] Quick Command: ClassStart")
-        auto_unmute_if_needed(); play_mp3_file("ClassStart.mp3"); text_area_insert(" 銝𡃏玨?湔偘??ClassStart.mp3"); save_to_csv("Bell:ClassStart", sender, ip=sender_ip); return
+        auto_unmute_if_needed(); play_mp3_file("ClassStart.mp3"); text_area_insert(" 上課鈴播放 ClassStart.mp3"); save_to_csv("Bell:ClassStart", sender, ip=sender_ip); return
 
     if text.strip() == "Bell:ClassEnd":
         print(f"[DEBUG] Quick Command: ClassEnd")
-        auto_unmute_if_needed(); play_mp3_file("ClassEnd.mp3"); text_area_insert(" 銝贝玨?湔偘??ClassEnd.mp3"); save_to_csv("Bell:ClassEnd", sender, ip=sender_ip); return
+        auto_unmute_if_needed(); play_mp3_file("ClassEnd.mp3"); text_area_insert(" 下課鈴播放 ClassEnd.mp3"); save_to_csv("Bell:ClassEnd", sender, ip=sender_ip); return
 
     if text.strip() == "Bell:EarthquakeAlarm":
         print(f"[DEBUG] Quick Command: EarthquakeAlarm")
-        auto_unmute_if_needed(); play_mp3_file("justearthquakeAlarm.mp3"); text_area_insert(" ?圈?霅血𥼚?剜𦆮 justearthquakeAlarm.mp3"); save_to_csv("Bell:EarthquakeAlarm", sender, ip=sender_ip); return
+        auto_unmute_if_needed(); play_mp3_file("justearthquakeAlarm.mp3"); text_area_insert(" 地震警報播放 justearthquakeAlarm.mp3"); save_to_csv("Bell:EarthquakeAlarm", sender, ip=sender_ip); return
 
 
 
     if text.strip() == "MP3Pause":
         pause_web_audio()
-        set_playing_status("?賂? MP3 ?怠? (Web Redirect)")
+        set_playing_status("⏸️ MP3 暫停 (Web Redirect)")
         return
 
 
 
     if text.strip() == "MP3Resume":
         resume_web_audio()
-        set_playing_status("?塚? MP3 蝜潛? (Web Redirect)")
+        set_playing_status("▶️ MP3 繼續 (Web Redirect)")
         return
 
 
@@ -6420,14 +6417,14 @@ def handle_msg(text, addr):
     if text.strip() == "MP3Stop":
         stop_web_audio()
         ui_safe(_set_progress, 0); STATE["progress"] = 0
-        set_playing_status("?對? MP3 ?𨀣迫 (Web Redirect)")
+        set_playing_status("⏹️ MP3 停止 (Web Redirect)")
         return
 
 
 
     if text.strip() == "MP3Seek":
 
-        text_area_insert("?對? MP3Seek嚗䮝ygame 銝齿𣈲??Seek嚗�歇敹賜裦")
+        text_area_insert("ℹ️ MP3Seek：pygame 不支援 Seek，已忽略")
 
         return
 
@@ -6435,7 +6432,7 @@ def handle_msg(text, addr):
 
     if "youtube.com/watch" in text or "youtu.be/" in text or "/shorts/" in text:
 
-        auto_unmute_if_needed(); text_area_insert(f" 銝贝?銝行偘??YouTube ?唾?嚗㝯text}")
+        auto_unmute_if_needed(); text_area_insert(f" 下載並播放 YouTube 音訊：{text}")
 
         stop_playback_event.set(); stop_playback_event.clear()
 
@@ -6443,33 +6440,33 @@ def handle_msg(text, addr):
 
 
 
-    if text in ("Boy", "??, "?瑁�"):
+    if text in ("Boy", "男", "男聲"):
         def _to_boy():
-            if 'gender_label_var' in globals(): gender_label_var.set("?瑁�")
+            if 'gender_label_var' in globals(): gender_label_var.set("男聲")
             update_voice()
         ui_safe(_to_boy)
         return
 
-    if text in ("Girl", "憟?, "憟唾�"):
+    if text in ("Girl", "女", "女聲"):
         def _to_girl():
-            if 'gender_label_var' in globals(): gender_label_var.set("憟唾�")
+            if 'gender_label_var' in globals(): gender_label_var.set("女聲")
             update_voice()
         ui_safe(_to_girl)
         return
 
-    if text in ("Mute", "?𣈯𨺗"):
+    if text in ("Mute", "靜音"):
         voice_muted = True; STATE["muted"] = True; stop_playback_event.set()
         stop_web_audio()
-        ui_safe(status_label.config, text=" 隤鮋𨺗撌脤??喉??剜𦆮銝剜𪃾嚗?, fg="#888")
-        set_playing_status(" 隤鮋𨺗撌脤???); ui_safe(_set_progress, 0); STATE["progress"] = 0; save_to_csv("Mute", sender, ip=sender_ip); return
+        ui_safe(status_label.config, text=" 語音已靜音（播放中斷）", fg="#888")
+        set_playing_status(" 語音已靜音"); ui_safe(_set_progress, 0); STATE["progress"] = 0; save_to_csv("Mute", sender, ip=sender_ip); return
 
-    if text in ("Unmute", "閫?膄?𣈯𨺗", "?𡝗??𣈯𨺗"):
+    if text in ("Unmute", "解除靜音", "取消靜音"):
 
         voice_muted = False; STATE["muted"] = False; stop_playback_event.clear()
 
-        ui_safe(status_label.config, text=" 隤鮋𨺗?毺鍂銝?, fg="#188a3a")
+        ui_safe(status_label.config, text=" 語音啟用中", fg="#188a3a")
 
-        set_playing_status(" 隤鮋𨺗?毺鍂銝?); save_to_csv("Unmute", sender, ip=sender_ip); return
+        set_playing_status(" 語音啟用中"); save_to_csv("Unmute", sender, ip=sender_ip); return
 
 
 
@@ -6481,7 +6478,7 @@ def handle_msg(text, addr):
 
             v = int(r.replace("%", ""))
 
-            ui_safe(rate_scale.set, v); ui_safe(rate_label.config, text=f"隤鮋��?{v}%")
+            ui_safe(rate_scale.set, v); ui_safe(rate_label.config, text=f"語速：{v}%")
 
             voice_rate = f"{v}%"; STATE["rate"] = voice_rate
 
@@ -6512,7 +6509,7 @@ def handle_msg(text, addr):
         spk = text[15:].strip()
         MELO_SPEAKER = spk
         STATE["melo_speaker"] = spk
-        text_area_insert(f" Melo ?漤𨺗?䁅挽銝?{spk}嚗�䔉??{sender}嚗?)
+        text_area_insert(f" Melo 配音员设为 {spk}（来自 {sender}）")
         return
 
     if text.startswith("SetMeloEnabled:"):
@@ -6520,8 +6517,8 @@ def handle_msg(text, addr):
         val = text[15:].strip().lower()
         USE_MELO_TTS = (val == "true")
         STATE["melo_enabled"] = USE_MELO_TTS
-        status_msg = "撌脣??? if USE_MELO_TTS else "撌脣???
-        text_area_insert(f" Melo AI 霂剔頂 {status_msg}嚗�䔉??{sender}嚗?)
+        status_msg = "已啟用" if USE_MELO_TTS else "已停用"
+        text_area_insert(f" Melo AI 语系 {status_msg}（来自 {sender}）")
         return
 
 
@@ -6532,7 +6529,7 @@ def handle_msg(text, addr):
 
         arg = text[14:].strip()
 
-        text_area_insert(f" 靘�䌊 {sender}嚗䥪layWithChime ??{arg}")
+        text_area_insert(f" 來自 {sender}：PlayWithChime → {arg}")
 
         save_to_csv(f"PlayWithChime:{arg}", sender, ip=sender_ip)
 
@@ -6588,7 +6585,7 @@ def handle_msg(text, addr):
 
                     print(f"[Debug] Merge inputs: {inputs}")
 
-                    text_area_insert(f"?? ?閧??單??�蔥 ({len(inputs)} clips)...")
+                    text_area_insert(f"🔄 處理音效合併 ({len(inputs)} clips)...")
 
 
 
@@ -6620,7 +6617,7 @@ def handle_msg(text, addr):
 
                         print(f"[Error] FFMPEG Fail: {err}")
 
-                        text_area_insert(f"??FFMPEG憭望?: {err}")
+                        text_area_insert(f"❌ FFMPEG失敗: {err}")
 
                     
 
@@ -6628,13 +6625,13 @@ def handle_msg(text, addr):
 
                         final_path = merged_mp3
 
-                        text_area_insert("???�蔥?𣂼?嚗屸?憪𧢲偘??)
+                        text_area_insert("✅ 合併成功，開始播放")
 
             except Exception as e:
 
                 print(f"[Error] PlayWithChime merge exception: {e}")
 
-                text_area_insert(f"???�蔥靘见?: {str(e)}")
+                text_area_insert(f"❌ 合併例外: {str(e)}")
 
 
 
@@ -6652,7 +6649,7 @@ def handle_msg(text, addr):
 
         arg = text[8:].strip()
 
-        text_area_insert(f" 靘�䌊 {sender}嚗䥪layMP3 ??{arg}")
+        text_area_insert(f" 來自 {sender}：PlayMP3 → {arg}")
 
         save_to_csv(f"PlayMP3:{arg}", sender, ip=sender_ip)
 
@@ -6702,13 +6699,13 @@ def handle_msg(text, addr):
 
         if mode == "start":
 
-            text_area_insert(f" ?剜𦆮?见??鞟內??-> Relay ON")
+            text_area_insert(f" 播放開始提示音 -> Relay ON")
 
             # Request: PlayChime:Start -> Relay ON -> Sound
 
             try: control_usb_relay("ON")
 
-            except Exception as e: text_area_insert(f"??Relay ON Fail: {e}")
+            except Exception as e: text_area_insert(f"❌ Relay ON Fail: {e}")
 
             target = START_SOUND
 
@@ -6716,7 +6713,7 @@ def handle_msg(text, addr):
 
         elif mode == "end":
 
-            text_area_insert(f" ?剜𦆮蝯鞉??鞟內??)
+            text_area_insert(f" 播放結束提示音")
 
             target = END_SOUND
 
@@ -6736,11 +6733,11 @@ def handle_msg(text, addr):
 
                 else:
 
-                    text_area_insert(f"?𩤃? ?鞟內?單?銝滚??剁?{target}")
+                    text_area_insert(f"⚠️ 提示音檔不存在：{target}")
 
             except Exception as e:
 
-                text_area_insert(f"???鞟內?單偘?曉仃?梹?{e}")
+                text_area_insert(f"❌ 提示音播放失敗：{e}")
 
         
 
@@ -6748,11 +6745,11 @@ def handle_msg(text, addr):
 
         if mode == "end":
 
-            text_area_insert(f" 蝯鞉??單偘??-> Relay OFF")
+            text_area_insert(f" 結束音播畢 -> Relay OFF")
 
             try: control_usb_relay("OFF")
 
-            except Exception as e: text_area_insert(f"??Relay OFF Fail: {e}")
+            except Exception as e: text_area_insert(f"❌ Relay OFF Fail: {e}")
 
             
 
@@ -6766,7 +6763,7 @@ def handle_msg(text, addr):
 
         PIPER_FORCE = on in ("1","true","on","yes")
 
-        text_area_insert(f" Piper 撘瑕�?芸?嚗㝯PIPER_FORCE}")
+        text_area_insert(f" Piper 強制優先：{PIPER_FORCE}")
 
         save_to_csv(f"PiperForce:{PIPER_FORCE}", sender, ip=sender_ip)
 
@@ -6774,7 +6771,7 @@ def handle_msg(text, addr):
 
 
 
-    if text.startswith("PiperSet:"):  # 靘页?PiperSet: length=1.05, noise=0.6, noisew=0.8, speaker=0
+    if text.startswith("PiperSet:"):  # 例：PiperSet: length=1.05, noise=0.6, noisew=0.8, speaker=0
 
         try:
 
@@ -6796,11 +6793,11 @@ def handle_msg(text, addr):
 
             _piper_save_cfg(PIPER_CFG)
 
-            text_area_insert(f" Piper ?�彍?湔鰵嚗㝯PIPER_CFG}")
+            text_area_insert(f" Piper 參數更新：{PIPER_CFG}")
 
         except Exception as e:
 
-            text_area_insert(f"??PiperSet 閫??憭望?嚗㝯e}")
+            text_area_insert(f"❌ PiperSet 解析失敗：{e}")
 
         return
 
@@ -6814,7 +6811,7 @@ def handle_msg(text, addr):
             display_text = text[end_idx+2:]
         except: pass
 
-    text_area_insert(f"靘�䌊 {sender}嚗㝯display_text}"); save_to_csv(text, sender, ip=sender_ip)
+    text_area_insert(f"來自 {sender}：{display_text}"); save_to_csv(text, sender, ip=sender_ip)
 
     
 
@@ -6824,7 +6821,7 @@ def handle_msg(text, addr):
 
     
     if TRIAL_EXPIRED:
-        text_area_insert("?𩤃? 閰衣鍂?笔歇?𠬍??⊥??瑁?隤鮋𨺗?�?", "TTS")
+        text_area_insert("⚠️ 試用期已過，無法執行語音合成", "TTS")
         return
 
     if not (stop_playback_event.is_set() or voice_muted): enqueue_drop_old(speech_queue, text)
@@ -6861,7 +6858,7 @@ timetable_enabled = True
 
 def _validate_timetable(data):
 
-    """撽𡑒?隤脰”鞈�??澆?"""
+    """驗證課表資料格式"""
 
     if not isinstance(data, dict):
 
@@ -6877,7 +6874,7 @@ def _validate_timetable(data):
 
 def _load_timetable_from_disk():
 
-    """敺䂿?蝣蠘??亥玨銵?""
+    """從磁碟載入課表"""
 
     global timetable_data, timetable_enabled
 
@@ -7034,7 +7031,7 @@ tracker = OnlineTracker(groups=6, ttl=15, stale=600)
 
 
 
-# -------- ?�??--------
+# -------- 狀態 --------
 
 groups_lock = threading.Lock()
 
@@ -7058,7 +7055,7 @@ groups = {
 
             "volume": 1.0,
 
-            "title": ""   # 瘥讐??芾?璅䠷?
+            "title": ""   # 每組自訂標題
 
         }
 
@@ -7168,13 +7165,13 @@ def push_cmd(g, cmd, only_ips=None):
 
 # ===============================
 
-# == [ANCHOR] 摮貊?蝡舀綉?嗅???==
+# == [ANCHOR] 學生端控制功能 ==
 
 # ===============================
 
 def student_udp_listener():
 
-    """?交𤣰摮貊?蝡舫��???HELLO 撠�?"""
+    """接收學生端送來的 HELLO 封包"""
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -7184,11 +7181,11 @@ def student_udp_listener():
 
         sock.settimeout(1.0)
 
-        text_area_insert(f"[Student Controller] UDP ??�?笔???0.0.0.0:{STUDENT_UDP_LISTEN_PORT}", "StudentCtrl")
+        text_area_insert(f"[Student Controller] UDP 監聽啟動於 0.0.0.0:{STUDENT_UDP_LISTEN_PORT}", "StudentCtrl")
 
     except Exception as e:
 
-        text_area_insert(f"[Student Controller] UDP ??�憭望?嚗㝯e}", "StudentCtrl")
+        text_area_insert(f"[Student Controller] UDP 監聽失敗：{e}", "StudentCtrl")
 
         return
 
@@ -7260,7 +7257,7 @@ def student_udp_listener():
 
                         "hostname": hostname,
 
-                        "last_seen": get_now(),
+                        "last_seen": datetime.now(),
 
                     }
 
@@ -7280,7 +7277,7 @@ def student_udp_listener():
 
 def student_broadcast_discover():
 
-    """摰𡁏?撱?偘 DISCOVER嚗峕??鍦飛?毺垢?𧼮� HELLO"""
+    """定期廣播 DISCOVER，提醒學生端回傳 HELLO"""
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -7288,7 +7285,7 @@ def student_broadcast_discover():
 
     msg = b"DISCOVER"
 
-    text_area_insert(f"[Student Controller] DISCOVER 撱?偘?笔?嚗�? {STUDENT_DISCOVER_INTERVAL} 蝘𡜐?", "StudentCtrl")
+    text_area_insert(f"[Student Controller] DISCOVER 廣播啟動（每 {STUDENT_DISCOVER_INTERVAL} 秒）", "StudentCtrl")
 
     
 
@@ -7313,7 +7310,7 @@ def student_broadcast_discover():
 
 
 def send_student_udp_command(ip: str, port: int, cmd: str, args: str = "", client_id: str = None):
-    """?潮��綉?嗆?隞斤策摮貊?蝡?(?芸?韏?WebSocket)"""
+    """發送控制指令給學生端 (優先走 WebSocket)"""
     msg = f"CMD|{cmd}|{args}"
     
     # 1. Try WebSocket first if client_id is known
@@ -7345,7 +7342,7 @@ def send_student_udp_command(ip: str, port: int, cmd: str, args: str = "", clien
 
 def send_magic_packet(mac: str, broadcast_ip: str = "255.255.255.255", port: int = 9):
 
-    """?潮�?WOL (Wake-on-LAN) 擳磰?撠�?"""
+    """發送 WOL (Wake-on-LAN) 魔術封包"""
 
     try:
 
@@ -7395,29 +7392,29 @@ app.template_folder = UI_TEMPLATE_DIR
 
 # ===============================
 
-# == [ANCHOR] 隤滩?蝟餌絞?滨蔭 ==
+# == [ANCHOR] 認證系統配置 ==
 
 # ===============================
 
 
 
-# Flask Session ?滨蔭
+# Flask Session 配置
 
 app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 
 app.config['SESSION_TYPE'] = 'filesystem'
 
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=2)  # 2撠𤩺??擧?
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=2)  # 2小時過期
 
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 
-app.config['SESSION_COOKIE_SECURE'] = False  # ?砍𧑐?讠䔄閮剔� False嚗𣬚??Ｙ兛憓�㺿??True嚗�? HTTPS嚗?
+app.config['SESSION_COOKIE_SECURE'] = False  # 本地開發設為 False，生產環境改為 True（需 HTTPS）
 
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 
 
-# ?冽�?滨蔭?�辣頝臬?
+# 用戶配置文件路徑
 
 USERS_CONFIG_PATH = os.path.join(APP_DIR, "users_config.json")
 
@@ -7425,7 +7422,7 @@ USERS_CONFIG_PATH = os.path.join(APP_DIR, "users_config.json")
 
 def load_users_config():
 
-    """頛匧�?冽�?滨蔭"""
+    """載入用戶配置"""
 
     try:
 
@@ -7472,7 +7469,7 @@ def load_users_config():
 
 def save_users_config(config):
 
-    """靽嘥??冽�?滨蔭"""
+    """保存用戶配置"""
 
     try:
 
@@ -7489,7 +7486,7 @@ def save_users_config(config):
 
 def get_user_by_username(username):
 
-    """?寞??冽�?齿䰻?曄鍂??""
+    """根據用戶名查找用戶"""
 
     config = load_users_config()
 
@@ -7507,11 +7504,11 @@ def get_user_by_username(username):
 
 def verify_password(password, password_hash):
 
-    """撽𡑒?撖�Ⅳ"""
+    """驗證密碼"""
 
     if not _HAS_BCRYPT:
 
-        # 憒�?瘝埝? bcrypt嚗䔶蝙?函陛?格?撠㵪?銝滚??剁??�鍂?潮??潘?
+        # 如果沒有 bcrypt，使用簡單比對（不安全，僅用於開發）
 
         return password == password_hash
 
@@ -7535,11 +7532,11 @@ def verify_password(password, password_hash):
 
 def hash_password(password):
 
-    """?�?撖�Ⅳ?�?"""
+    """生成密碼哈希"""
 
     if not _HAS_BCRYPT:
 
-        # 憒�?瘝埝? bcrypt嚗諹??墧??�?銝滚??剁??�鍂?潮??潘?
+        # 如果沒有 bcrypt，返回明文（不安全，僅用於開發）
 
         print("[AUTH] WARNING: Using plaintext password (bcrypt not installed)")
 
@@ -7561,7 +7558,7 @@ def hash_password(password):
 
 def _safe_next_url(target: str | None):
 
-    """蝣箄? next ?�彍摰匧�銝𠉛�?祉?頝臬?"""
+    """確認 next 參數安全且為本站路徑"""
 
     if not target:
 
@@ -7591,7 +7588,7 @@ def _safe_next_url(target: str | None):
 
 def _login_redirect_response():
 
-    """?�葆 next ?�彍?�蒈?仿??滚?"""
+    """附帶 next 參數的登入頁重導"""
 
     next_path = request.full_path if request.query_string else request.path
 
@@ -7607,11 +7604,11 @@ def _login_redirect_response():
 
 
 
-# 隤滩?鋆嗪ˇ??
+# 認證裝飾器
 
 def _is_api_request():
 
-    """?斗𪃾?嗅?隢𧢲??臬炏撅祆䲰 API嚗屸?閬�???JSON"""
+    """判斷當前請求是否屬於 API，需要回傳 JSON"""
 
     path = request.path or ""
 
@@ -7621,7 +7618,7 @@ def _is_api_request():
 
 def login_required(f):
 
-    """閬�??駁??�?憌曉膥"""
+    """要求登錄的裝飾器"""
 
     @wraps(f)
 
@@ -7629,13 +7626,13 @@ def login_required(f):
 
         if 'user_id' not in session:
 
-            # API 隢𧢲?餈𥪜? JSON
+            # API 請求返回 JSON
 
             if _is_api_request():
 
-                return jsonify(ok=False, error="?芰蒈??, need_login=True), 401
+                return jsonify(ok=False, error="未登錄", need_login=True), 401
 
-            # 蝬脤?隢𧢲??滚??穃�?駁???
+            # 網頁請求重定向到登錄頁
 
             return _login_redirect_response()
 
@@ -7646,10 +7643,10 @@ def login_required(f):
 
 
 def admin_required(f):
-    """閬�?蝞∠??⊥??坔葦甈𢠃??�?憌曉膥 (蝷箇?璅∪?嚗𡁜撥銵諹圾??"""
+    """要求管理員或教師權限的裝飾器 (示範模式：強行解鎖)"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # 撅閧內璅∪?嚗帋?瑼Ｘ䰻 session嚗𣬚凒?亙?閮勗???
+        # 展示模式：不檢查 session，直接允許存取
         return f(*args, **kwargs)
     return decorated_function
 
@@ -7657,7 +7654,7 @@ def admin_required(f):
 
 def teacher_or_admin_required(f):
 
-    """閬�??坔葦?𣇉恣?�摱甈𢠃?嚗�ê̌?㵪?"""
+    """要求教師或管理員權限（別名）"""
 
     return admin_required(f)
 
@@ -7665,7 +7662,7 @@ def teacher_or_admin_required(f):
 
 # ===============================
 
-# == [ANCHOR] 隤滩?頝舐眏 ==
+# == [ANCHOR] 認證路由 ==
 
 # ===============================
 
@@ -7673,36 +7670,36 @@ def teacher_or_admin_required(f):
 
 @app.route('/login')
 def login_page():
-    """?駁??�𢒰 (蝷箇?璅∪?嚗𡁶凒?仿�脣�銝餅綉??"""
-    # 撅閧內璅∪?銝衤?憿舐內?駁??�𢒰嚗𣬚凒?亥歲頧匧�銝餅綉??
+    """登錄頁面 (示範模式：直接進入主控台)"""
+    # 展示模式下不顯示登錄頁面，直接跳轉到主控台
     return redirect('/static/ui/index.html')
 
 
 
 @app.post('/auth/login')
 def login_api():
-    """慦㘾?/?蠘� ?餃� API (蝷箇?璅∪?嚗朞䌊?閖�𡁻?)"""
+    """媒體/功能 登入 API (示範模式：自動通過)"""
     session['user_id'] = 'demo_admin'
-    session['username'] = '撅閧內蝞∠???
+    session['username'] = '展示管理員'
     session['role'] = 'admin'
     session.permanent = True
-    return jsonify(ok=True, message="撅閧內璅∪??駁??𣂼?", role='admin', username='撅閧內蝞∠???, user_id='demo_admin')
+    return jsonify(ok=True, message="展示模式登錄成功", role='admin', username='展示管理員', user_id='demo_admin')
 
 @app.post('/auth/logout')
 def auth_logout():
-    """?餃枂 API (蝷箇?璅∪?嚗𡁏?蝛箔?憿舐內?𣂼?)"""
+    """登出 API (示範模式：清空但顯示成功)"""
     session.clear()
-    return jsonify(ok=True, message="?餃枂?𣂼?")
+    return jsonify(ok=True, message="登出成功")
 
 @app.get('/auth/status')
 def auth_status():
-    """瑼Ｙ揣?嗅??冽�?駁??�??(蝷箇?璅∪?嚗𡁏偶?惩銁蝺?"""
+    """檢索當前用戶登錄狀態 (示範模式：永遠在線)"""
     return jsonify(
         ok=True,
         logged_in=True,
         user={
             'id': 'demo_admin',
-            'username': '撅閧內蝞∠???,
+            'username': '展示管理員',
             'role': 'admin'
         }
     )
@@ -7715,9 +7712,9 @@ def auth_status():
 
 def auth_heartbeat():
 
-    """Session 敹�歲嚗䔶??�蒈?�???""
+    """Session 心跳，保持登錄狀態"""
 
-    session.modified = True  # ?湔鰵 session ?�?
+    session.modified = True  # 更新 session 時間
 
     return jsonify(ok=True, timestamp=time.time())
 
@@ -7729,7 +7726,7 @@ def auth_heartbeat():
 
 def auth_change_password():
 
-    """靽格㺿撖�Ⅳ"""
+    """修改密碼"""
 
     try:
 
@@ -7743,17 +7740,17 @@ def auth_change_password():
 
         if not old_password or not new_password:
 
-            return jsonify(ok=False, error="隢𧢲?靘𥡝?撖�Ⅳ?峕鰵撖�Ⅳ"), 400
+            return jsonify(ok=False, error="請提供舊密碼和新密碼"), 400
 
         
 
         if len(new_password) < 6:
 
-            return jsonify(ok=False, error="?啣?蝣潸秐撠煾?閬??见?蝚?), 400
+            return jsonify(ok=False, error="新密碼至少需要6個字符"), 400
 
         
 
-        # 頛匧�?滨蔭
+        # 載入配置
 
         config = load_users_config()
 
@@ -7761,7 +7758,7 @@ def auth_change_password():
 
         
 
-        # ?交𪄳?嗅??冽�
+        # 查找當前用戶
 
         user_id = session.get('user_id')
 
@@ -7783,19 +7780,19 @@ def auth_change_password():
 
         if not user:
 
-            return jsonify(ok=False, error="?冽�銝滚???), 404
+            return jsonify(ok=False, error="用戶不存在"), 404
 
         
 
-        # 撽𡑒??𠰴?蝣?
+        # 驗證舊密碼
 
         if not verify_password(old_password, user.get('password_hash', '')):
 
-            return jsonify(ok=False, error="?𠰴?蝣潮𥲤隤?), 401
+            return jsonify(ok=False, error="舊密碼錯誤"), 401
 
         
 
-        # ?惩??啣?蝣?
+        # 加密新密碼
 
         new_hash = hash_password(new_password)
 
@@ -7803,7 +7800,7 @@ def auth_change_password():
 
         
 
-        # 靽嘥??滨蔭
+        # 保存配置
 
         config['users'] = users
 
@@ -7813,7 +7810,7 @@ def auth_change_password():
 
         try:
 
-            text_area_insert(f"?? ?冽� {user.get('username')} 靽格㺿鈭�?蝣?, "Auth")
+            text_area_insert(f"🔑 用戶 {user.get('username')} 修改了密碼", "Auth")
 
         except:
 
@@ -7821,7 +7818,7 @@ def auth_change_password():
 
         
 
-        return jsonify(ok=True, message="撖�Ⅳ靽格㺿?𣂼?")
+        return jsonify(ok=True, message="密碼修改成功")
 
     
 
@@ -7829,7 +7826,7 @@ def auth_change_password():
 
         print(f"[AUTH] Change password error: {e}")
 
-        return jsonify(ok=False, error=f"靽格㺿撖�Ⅳ憭望?嚗㝯str(e)}"), 500
+        return jsonify(ok=False, error=f"修改密碼失敗：{str(e)}"), 500
 
 
 
@@ -7839,7 +7836,7 @@ def auth_change_password():
 
 def auth_admin_create_user():
 
-    """?萄遣?啁鍂?塚??�恣?�摱嚗?""
+    """創建新用戶（僅管理員）"""
 
     try:
 
@@ -7857,11 +7854,11 @@ def auth_admin_create_user():
 
         if not username or not password:
 
-            return jsonify(ok=False, error="隢𧢲?靘𤤿鍂?嗅??�?蝣?), 400
+            return jsonify(ok=False, error="請提供用戶名和密碼"), 400
 
         
 
-        # 頛匧�?滨蔭
+        # 載入配置
 
         config = load_users_config()
 
@@ -7869,15 +7866,15 @@ def auth_admin_create_user():
 
         
 
-        # 瑼Ｘ䰻?冽�?齿糓?血歇摮睃銁
+        # 檢查用戶名是否已存在
 
         if any(u.get('username') == username for u in users):
 
-            return jsonify(ok=False, error="?冽�?滚歇摮睃銁"), 400
+            return jsonify(ok=False, error="用戶名已存在"), 400
 
         
 
-        # ?萄遣?啁鍂??
+        # 創建新用戶
 
         user_id = f"user_{int(time.time())}_{len(users)}"
 
@@ -7899,7 +7896,7 @@ def auth_admin_create_user():
 
             "enabled": True,
 
-            "created_at": get_now().strftime('%Y-%m-%d %H:%M:%S'),
+            "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
 
             "created_by": session.get('username')
 
@@ -7917,7 +7914,7 @@ def auth_admin_create_user():
 
         try:
 
-            text_area_insert(f"?𪈠 蝞∠???{session.get('username')} ?萄遣鈭�鰵?冽�嚗㝯username} ({role})", "Auth")
+            text_area_insert(f"👤 管理員 {session.get('username')} 創建了新用戶：{username} ({role})", "Auth")
 
         except:
 
@@ -7925,11 +7922,11 @@ def auth_admin_create_user():
 
         
 
-        # 餈𥪜??�宏?文?蝣澆?撣?
+        # 返回時移除密碼哈希
 
         return_user = {k: v for k, v in new_user.items() if k != 'password_hash'}
 
-        return jsonify(ok=True, user=return_user, message="?冽�?萄遣?𣂼?")
+        return jsonify(ok=True, user=return_user, message="用戶創建成功")
 
     
 
@@ -7937,7 +7934,7 @@ def auth_admin_create_user():
 
         print(f"[AUTH] Create user error: {e}")
 
-        return jsonify(ok=False, error=f"?萄遣?冽�憭望?嚗㝯str(e)}"), 500
+        return jsonify(ok=False, error=f"創建用戶失敗：{str(e)}"), 500
 
 
 
@@ -8005,7 +8002,7 @@ def auto_redirect():
 
 def page_controller():
 
-    """?𣂷?摮貊?蝡舀綉?嗅蝱?�𢒰"""
+    """提供學生端控制台頁面"""
 
     return render_template("controller.html")
 
@@ -8017,9 +8014,9 @@ def page_controller():
 
 def controller_api_clients():
 
-    """?脣?摮貊?蝡舀???API"""
+    """獲取學生端清單 API"""
 
-    now = get_now()
+    now = datetime.now()
 
     with students_lock:
 
@@ -8061,7 +8058,7 @@ def controller_api_clients():
 
 def controller_api_send():
 
-    """?潮��綉?嗆?隞斤策摮貊?蝡?API"""
+    """發送控制指令給學生端 API"""
 
     try:
 
@@ -8085,13 +8082,13 @@ def controller_api_send():
 
     if not targets:
 
-        return jsonify(ok=False, error="隢贝秐撠穃㗲?訾??啣飛?罸𤓖??), 400
+        return jsonify(ok=False, error="請至少勾選一台學生電腦"), 400
 
     
 
     if cmd == "open_url" and not url_val:
 
-        return jsonify(ok=False, error="隢贝撓?亥??见??�雯?�"), 400
+        return jsonify(ok=False, error="請輸入要開啟的網址"), 400
 
     
 
@@ -8468,7 +8465,7 @@ def api_cmd():
 
                         set_volume(v)
 
-                        text_area_insert(f" ?喲?閮剔� {v}%嚗�???Web API嚗?)
+                        text_area_insert(f" 音量設為 {v}%（來自 Web API）")
 
                         save_to_csv(f"SetVolume:{v}", "WebAPI")
 
@@ -8671,7 +8668,7 @@ def page_devices():
 
 def page_student_default():
 
-    """摮貊?蝡舫?閮剝??ｇ?撠𤾸? home.html"""
+    """學生端預設頁面，導向 home.html"""
 
     return redirect("/static/ui/home.html")
 
@@ -8723,7 +8720,7 @@ def api_qr_img():
 
         return "QR Error", 500
 
-# ====== [ANNOUNCE] ?剔??砍??�?贝? API嚗�䌊?訫?甇亙?蝡?announce.html嚗?======
+# ====== [ANNOUNCE] 班級公告狀態與 API（自動同步前端 announce.html） ======
 
 try:
 
@@ -8741,7 +8738,7 @@ except NameError:
 
         "media_type": "",
 
-        "sound": 1,   # 1=?𡑒?, 0=銝齿?霈�
+        "sound": 1,   # 1=朗讀, 0=不朗讀
 
         "ts": 0
 
@@ -8797,7 +8794,7 @@ def _set_announce(message: str, image: str = "", sound: int = 1, media: str = ""
 
 def api_get_weather():
 
-    """?硋?瘞?情?剖𥼚?�?嚗䔶??湔𦻖撱?偘"""
+    """取得氣象播報文字，不直接廣播"""
 
     try:
 
@@ -8879,7 +8876,7 @@ def _client_ip_from_request():
 
 @app.get("/")
 def home():
-    # 擐㚚??滚??穃�隞讠晶?�𢒰 (蝷箇?璅∪?)
+    # 首頁重定向到介紹頁面 (示範模式)
     welcome_page = os.path.join(UI_TEMPLATE_DIR, "welcome.html")
     if os.path.exists(welcome_page):
         return redirect("/static/ui/welcome.html", code=302)
@@ -8891,7 +8888,7 @@ def home():
 
 
 
-# ====== [EEW] CWA ?圈?頧㗇𦻖嚗�?靘𤤿策 eew.html 雿輻鍂嚗?======
+# ====== [EEW] CWA 地震轉接（提供給 eew.html 使用） ======
 
 CWA_API_KEY = "" # Global placeholder, actual load happens below
 
@@ -8899,13 +8896,13 @@ CWA_API_KEY = "" # Global placeholder, actual load happens below
 
 def _parse_cwa_float(val):
 
-    """?𡑒岫撠?CWA ?喳??�?蝺臬漲嚗𤩺楛摨血?銝脰???float嚗𥕦仃?堒??𧼮� None??""
+    """嘗試將 CWA 傳回的經緯度／深度字串轉成 float；失敗則回傳 None。"""
 
     try:
 
         if isinstance(val, str):
 
-            for ch in ["摨?, "?祇?", "km"]:
+            for ch in ["度", "公里", "km"]:
 
                 val = val.replace(ch, "")
 
@@ -8937,7 +8934,7 @@ def _diag(msg):
 
 def fetch_cwa_events(limit=10):
 
-    """??CWA ?硋??�餈穃𧑐?�?憿航? + 撠誩??�?嚗諹??鞟陛?硋?銵函策 /eew/cwa_feed 雿輻鍂??""
+    """向 CWA 取得最近地震（顯著 + 小區域），轉成簡化列表給 /eew/cwa_feed 使用。"""
 
     global CWA_CACHE_EVENTS
     now = time.time()
@@ -9059,9 +9056,9 @@ def fetch_cwa_events(limit=10):
 
                 for area in shaking_areas:
 
-                    # CWA format: "AreaIntensity": "4蝝? or "5撘?
+                    # CWA format: "AreaIntensity": "4級" or "5弱"
 
-                    # "CountyName": "?梯𤧣蝮?, "TownName": "..."
+                    # "CountyName": "花蓮縣", "TownName": "..."
 
                     
 
@@ -9107,7 +9104,7 @@ def fetch_cwa_events(limit=10):
 
                     "location": loc,
 
-                    "title": report_text or f"{origin_time} {loc} 閬𤩺芋{mag_val}",
+                    "title": report_text or f"{origin_time} {loc} 規模{mag_val}",
 
                     "src": src,
 
@@ -9115,7 +9112,7 @@ def fetch_cwa_events(limit=10):
 
                     "intensity": max_intensity, # [Added]
 
-                    "shaking_areas": area_intensities, # [New] { "?啣?撣?: "2蝝?, ... }
+                    "shaking_areas": area_intensities, # [New] { "台北市": "2級", ... }
 
                 })
 
@@ -9145,7 +9142,7 @@ def fetch_cwa_events(limit=10):
 
 def fetch_cwa_warnings(limit=10):
 
-    """??CWA ?硋?憭拇除霅衣鸌?梧?W-C0033-001嚗㚁??𧼮�?𡑒”??""
+    """向 CWA 取得天氣警特報（W-C0033-001），回傳列表。"""
 
     global CWA_CACHE_WARNINGS
     now = time.time()
@@ -9254,9 +9251,9 @@ def fetch_cwa_warnings(limit=10):
 
                     
 
-                    # We care about "?訾?撘琿◢" (Strong Wind) or "憸梢◢" (Typhoon)
+                    # We care about "陸上強風" (Strong Wind) or "颱風" (Typhoon)
 
-                    if phenomena in ["?訾?撘琿◢", "憸梢◢"]:
+                    if phenomena in ["陸上強風", "颱風"]:
 
                         res.append({ # Changed from 'results' to 'res'
 
@@ -9308,7 +9305,7 @@ def fetch_cwa_warnings(limit=10):
 
 def eew_cwa_feed():
 
-    """?𣂷??滨垢 eew.html ?亥岷 CWA ?�餈穃𧑐?�鍂嚗𢥧SGS 隞滨眏?滨垢?湔𦻖?瓐�?""
+    """提供前端 eew.html 查詢 CWA 最近地震用；USGS 仍由前端直接抓。"""
 
     if not CWA_API_KEY:
 
@@ -9334,7 +9331,7 @@ def eew_cwa_feed():
 
 def eew_weather_feed():
 
-    """?𣂷??滨垢?亥岷 CWA 憭拇除霅衣鸌?晞�?""
+    """提供前端查詢 CWA 天氣警特報。"""
 
     if not CWA_API_KEY:
 
@@ -9354,7 +9351,7 @@ def eew_weather_feed():
 
 
 
-# ====== CWA ?啁??�?讠恣?�?頛芾岷?讛摩 ======
+# ====== CWA 新版狀態管理與輪詢邏輯 ======
 
 CWA_CONF_FILE = os.path.join(APP_DIR, "cwa_config.json")
 
@@ -9389,7 +9386,7 @@ CWA_CACHE_TTL = 60 # 60 seconds
 CWA_TCP_ACCOUNT = ""
 CWA_TCP_PASSWORD = ""
 CWA_TCP_STATUS = "Disconnected"
-CWA_LICENSE_SITE = "" # e.g. "?箏?撣�??堒??笔?擃䀝葉"
+CWA_LICENSE_SITE = "" # e.g. "臺南市安南區土城高中"
 
 # [New] Trial/License Settings
 TRIAL_DAYS = 30
@@ -9400,7 +9397,7 @@ TRIAL_REMAINING = 0
 def _load_trial_info():
     global FIRST_RUN_TIME, TRIAL_EXPIRED, TRIAL_REMAINING
     p = os.path.join(DATA_DIR, "license.json")
-    now = get_now()
+    now = datetime.now()
     try:
         if os.path.exists(p):
             with open(p, "r", encoding="utf-8") as f:
@@ -9419,7 +9416,7 @@ def _load_trial_info():
         diff = now - FIRST_RUN_TIME
         TRIAL_REMAINING = max(0, TRIAL_DAYS - diff.days)
         if diff.days >= TRIAL_DAYS:
-            TRIAL_EXPIRED = False # [MOD] 撱園𩑈閰衣鍂??(銝漤?摰𡁜???
+            TRIAL_EXPIRED = False # [MOD] 延長試用期 (不鎖定功能)
             print(f"[LICENSE] Trial Period Extended. (Started: {FIRST_RUN_TIME})")
         else:
             TRIAL_EXPIRED = False
@@ -9437,7 +9434,7 @@ _load_trial_info()
 def _try_load_cwa_license():
     """
     Attempt to load CWA License (License.xml / LicenseData.xml) to auto-detect
-    Local City/County (e.g. '?箏?撣?) if not set in config.
+    Local City/County (e.g. '臺南市') if not set in config.
     """
     global CWA_LOCAL_CITY
     
@@ -9481,10 +9478,10 @@ def _try_load_cwa_license():
                     
                     # List of Taiwan Cities/Counties
                     taiwan_places = [
-                        "?粹?撣?, "?箏?撣?, "?啣?撣?, "?啣?撣?, "獢�?撣?, "?啁姘撣?, "?啁姘蝮?,
-                        "?埈?蝮?, "?箔葉撣?, "?唬葉撣?, "敶啣?蝮?, "?埈?蝮?, "?脫?蝮?, "?厩儔撣?,
-                        "?厩儔蝮?, "?箏?撣?, "?啣?撣?, "擃㗛?撣?, "撅𤩺𨭬蝮?, "摰𡏭嵰蝮?, "?梯𤧣蝮?,
-                        "?箸𨭬蝮?, "?唳𨭬蝮?, "瞉擧?蝮?, "?煾?蝮?, "???蝮?
+                        "基隆市", "臺北市", "台北市", "新北市", "桃園市", "新竹市", "新竹縣",
+                        "苗栗縣", "臺中市", "台中市", "彰化縣", "南投縣", "雲林縣", "嘉義市",
+                        "嘉義縣", "臺南市", "台南市", "高雄市", "屏東縣", "宜蘭縣", "花蓮縣",
+                        "臺東縣", "台東縣", "澎湖縣", "金門縣", "連江縣"
                     ]
                     
                     # Try decoding as utf-8 (common)
@@ -9493,8 +9490,8 @@ def _try_load_cwa_license():
                     for place in taiwan_places:
                         if place in decoded_str:
                             found_city = place
-                            # Standardize ??vs ??
-                            found_city = found_city.replace("??, "??)
+                            # Standardize 臺 vs 台
+                            found_city = found_city.replace("台", "臺")
                             break
                             
                     
@@ -9516,14 +9513,14 @@ def _try_load_cwa_license():
                              print(f"[LICENSE] Found TCP Account: {found_acc}, Pwd: {found_pwd}")
                              
                              # Search for Site Name (SName)
-                             # It often contains "擃䀝葉", "?衤葉", "撠誩飛" or specific city/town prefix
+                             # It often contains "高中", "國中", "小學" or specific city/town prefix
                              # We'll look for a reasonably long Chinese string after the password window
                              site_window = decoded_str[pwd_match.end() : pwd_match.end() + 150]
                              # Match Chinese characters, usually including city/town
                              site_match = re.search(r"[\u4e00-\u9fa5]{4,20}", site_window)
                              if site_match:
                                  global CWA_LICENSE_SITE
-                                 CWA_LICENSE_SITE = site_match.group(0).replace("??, "??)
+                                 CWA_LICENSE_SITE = site_match.group(0).replace("台", "臺")
                                  print(f"[LICENSE] Found Site Name: {CWA_LICENSE_SITE}")
                              break # Found a valid pair
 
@@ -9634,7 +9631,7 @@ def api_quake_state():
 
         _save_cwa_conf()
 
-        # ?亙??剁?閫貊䔄銝�甈∠??唾憚閰?(async)
+        # 若啟用，觸發一次立即輪詢 (async)
 
         if CWA_ENABLED:
 
@@ -9693,7 +9690,7 @@ def api_quake_key():
 
 def api_quake_test():
 
-    """蝡见朖皜祈岫 CWA ???銝血??喟???(銝滚誨??"""
+    """立即測試 CWA 連線並回傳結果 (不廣播)"""
 
     try:
 
@@ -9715,7 +9712,7 @@ def api_quake_test():
 
 def api_quake_diag():
 
-    """閮箸𪃾??𦻖"""
+    """診斷連接"""
 
     tried = []
 
@@ -9767,7 +9764,7 @@ def api_location():
 
 def _cwa_poll_once(silent=False):
 
-    """?格活頛芾岷?讛摩嚗諹𥅾?㗇鰵銝娪＊?堒𧑐?�?撱?偘"""
+    """單次輪詢邏輯，若有新且顯著地震則廣播"""
 
     global CWA_LAST_DATA, CWA_LAST_ERROR
 
@@ -9775,7 +9772,7 @@ def _cwa_poll_once(silent=False):
 
     if not CWA_API_KEY:
 
-        CWA_LAST_ERROR = "?芾身摰?CWA API Key"
+        CWA_LAST_ERROR = "未設定 CWA API Key"
 
         return
 
@@ -9783,13 +9780,13 @@ def _cwa_poll_once(silent=False):
 
     try:
 
-        CWA_LAST_ERROR = "瑼Ｘ䰻銝?.."
+        CWA_LAST_ERROR = "檢查中..."
 
         events = fetch_cwa_events(limit=1)
 
         if not events:
 
-             CWA_LAST_ERROR = "?亦�鞈�? (??Key ?⊥?)"
+             CWA_LAST_ERROR = "查無資料 (或 Key 無效)"
 
              return
 
@@ -9821,7 +9818,7 @@ def _cwa_poll_once(silent=False):
 
                 ev_dt = datetime.strptime(t_str, "%Y-%m-%d %H:%M:%S")
 
-                now = get_now()
+                now = datetime.now()
 
                 diff = (now - ev_dt).total_seconds()
 
@@ -9873,9 +9870,9 @@ def _cwa_poll_once(silent=False):
 
                 if local_intensity == "0":
 
-                    # Try "?? vs "?? replacement
+                    # Try "臺" vs "台" replacement
 
-                    alt_city = target_city.replace("??, "??)
+                    alt_city = target_city.replace("台", "臺")
 
                     local_intensity = ev["shaking_areas"].get(alt_city, "0")
 
@@ -9883,9 +9880,9 @@ def _cwa_poll_once(silent=False):
 
                 if local_intensity == "0":
 
-                    # Try "?? vs "?? reverse
+                    # Try "臺" vs "台" reverse
 
-                    alt_city = target_city.replace("??, "??)
+                    alt_city = target_city.replace("臺", "台")
 
                     local_intensity = ev["shaking_areas"].get(alt_city, "0")
 
@@ -9893,15 +9890,15 @@ def _cwa_poll_once(silent=False):
 
             # 3. Construct Msg
 
-            intensity_str = f"?�憭折?摨?{ev.get('intensity', '0')}"
+            intensity_str = f"最大震度 {ev.get('intensity', '0')}"
 
             if target_city and local_intensity != "0":
 
-                intensity_str += f"嚗庙target_city} {local_intensity}"
+                intensity_str += f"，{target_city} {local_intensity}"
 
             
 
-            msg = f"?𣂼𧑐?��笔𥼚?鶃ev['time']} {ev['location']} 閬𤩺芋 {ev['mag']} 瘛勗漲 {ev['depth']}km {intensity_str}"
+            msg = f"【地震速報】{ev['time']} {ev['location']} 規模 {ev['mag']} 深度 {ev['depth']}km {intensity_str}"
 
             print(f"[CWA] New Event: {msg} (Local Int: {local_intensity} @ {target_city})")
 
@@ -9923,15 +9920,15 @@ def _cwa_poll_once(silent=False):
 
                     def _int_val(s):
 
-                        s = s.replace("蝝?, "").strip()
+                        s = s.replace("級", "").strip()
 
-                        if s in ("5撘?, "5-"): return 5.0
+                        if s in ("5弱", "5-"): return 5.0
 
-                        if s in ("5撘?, "5+"): return 5.5
+                        if s in ("5強", "5+"): return 5.5
 
-                        if s in ("6撘?, "6-"): return 6.0
+                        if s in ("6弱", "6-"): return 6.0
 
-                        if s in ("6撘?, "6+"): return 6.5
+                        if s in ("6強", "6+"): return 6.5
 
                         try: return float(s)
 
@@ -9976,7 +9973,7 @@ def _cwa_poll_once(silent=False):
 
                     # Filter for target city and specific types
 
-                    relevant = [w for w in warnings if w["location"] == target_city and w["phenomena"] in ["?訾?撘琿◢", "憸梢◢"]]
+                    relevant = [w for w in warnings if w["location"] == target_city and w["phenomena"] in ["陸上強風", "颱風"]]
 
                     
 
@@ -10153,7 +10150,7 @@ def go_buddha(): return redirect("/static/ui/buddha.html", 302)
 
 
 
-# ====== [4-Relay Web API] 雿輻鍂?函? COM嚗㇌ELAY4_PORT嚗㗇綉??======
+# ====== [4-Relay Web API] 使用獨立 COM（RELAY4_PORT）控制 ======
 
 
 
@@ -10163,15 +10160,15 @@ def go_buddha(): return redirect("/static/ui/buddha.html", 302)
 
 def relay4_status():
 
-    """?𧼮� 4-Relay ?桀??�?讠策 relay4.html 雿輻鍂嚗䔶蒂?𣂷??舫� COM 皜�鱓??""
+    """回傳 4-Relay 目前狀態給 relay4.html 使用，並提供可選 COM 清單。"""
 
-    # ?滨垢?舫�誯? /relay4/status?port=COMx ?�??祆活?芸?雿輻鍂??4-Relay COM
+    # 前端可透過 /relay4/status?port=COMx 指定本次優先使用的 4-Relay COM
 
     override_port = (request.args.get("port") or "").strip() or None
 
 
 
-    # 瘥𤩺活?澆㙈?賡??唳???4-Relay ?䠷� COM嚗峕?靘𤤿策?滨垢銝𧢲??詨鱓雿輻鍂
+    # 每次呼叫都重新掃描 4-Relay 候選 COM，提供給前端下拉選單使用
 
     try:
 
@@ -10187,17 +10184,17 @@ def relay4_status():
 
 
 
-    # ??Relay ?桀?雿輻鍂??COM嚗�策?滨垢憿舐內?�鱓 Relay 撌脩鍂?滨鍂嚗?
+    # 單 Relay 目前使用的 COM（給前端顯示「單 Relay 已用」用）
 
     single_port = (RELAY_INFO.get("port") if "RELAY_INFO" in globals() else None) or RELAY_PORT
 
 
 
-    # 瘙箏??嗘?甈∪??梁策?滨垢??4-Relay 銝餉? COM
+    # 決定這一次回報給前端的 4-Relay 主要 COM
 
     if override_port:
 
-        # ?�迂?滨垢?急??�??𣂷?憿?COM ??4-Relay 雿輻鍂?格?
+        # 允許前端暫時指定某一顆 COM 為 4-Relay 使用目標
 
         with RELAY4_LOCK:
 
@@ -10207,9 +10204,9 @@ def relay4_status():
 
     else:
 
-        # 瘝埝??�?撠望窒?典??祉? auto_detect / ?见?閮剖??讛摩
+        # 沒有指定就沿用原本的 auto_detect / 手動設定邏輯
 
-        # [Fix] 蝘駁膄 get_manual_relay4_port() 瑼Ｘ䰻嚗𣬚Ⅱ靽?RELAY4_INFO ?芾身摰𡁏??��脣� auto_detect (?折�?�???manual)
+        # [Fix] 移除 get_manual_relay4_port() 檢查，確保 RELAY4_INFO 未設定時會進入 auto_detect (內部會讀取 manual)
 
         if not (RELAY4_INFO.get("port") or RELAY4_PORT):
 
@@ -10253,7 +10250,7 @@ def relay4_status():
 
 def relay4_set():
 
-    """閮剖??𣂷?頝舐匱?餃膥 ON/OFF嚗麿SON {ch:1-4, on:true/false, port?:COMx}??""
+    """設定某一路繼電器 ON/OFF：JSON {ch:1-4, on:true/false, port?:COMx}。"""
 
     try:
 
@@ -10271,7 +10268,7 @@ def relay4_set():
 
         if ch not in (1, 2, 3, 4):
 
-            return jsonify(ok=False, error="ch 敹�???1~4"), 400
+            return jsonify(ok=False, error="ch 必須是 1~4"), 400
 
 
 
@@ -10285,7 +10282,7 @@ def relay4_set():
 
 
 
-        # ?𣂼?敺䕘??峕郊?𧼮�?�?啁??页??�鉄?舐鍂 COM 皜�鱓?�鱓 Relay COM
+        # 成功後，同步回傳最新狀態，包含可用 COM 清單與單 Relay COM
 
         with RELAY4_LOCK:
 
@@ -10303,7 +10300,7 @@ def relay4_set():
 
             single_port = (RELAY_INFO.get("port") if "RELAY_INFO" in globals() else None) or RELAY_PORT
 
-            # ??[NEW] ?單? WebSocket 撱?偘嚗朞??�?厰???relay4.html ?�恥?嗥垢?單??峕郊
+            # ✅ [NEW] 即時 WebSocket 廣播：讓所有開啟 relay4.html 的客戶端即時同步
             try:
                 import json as _json
                 _clean_state = {str(k): int(v) for k, v in ch_state.items()}
@@ -10418,7 +10415,7 @@ def _try_libretranslate(q: str, source: str, target: str) -> str:
 
             return resp["translatedText"]
 
-    raise RuntimeError("銝𦠜虜??translatedText")
+    raise RuntimeError("上游無 translatedText")
 
 
 
@@ -10458,7 +10455,7 @@ def _try_mymemory(q: str, source: str, target: str) -> str:
 
     if txt: return txt
 
-    raise RuntimeError("MyMemory ??translatedText")
+    raise RuntimeError("MyMemory 無 translatedText")
 
 
 
@@ -10567,7 +10564,7 @@ def translate_api():
                 return jsonify(ok=True, translatedText=out, text=out, via="mymemory")
         except Exception as em: 
             print(f"[DEBUG] All engines failed")
-            return jsonify(ok=False, error=f"?�?厩蕃霅臬??𤾸?憭望?: {em}"), 502
+            return jsonify(ok=False, error=f"所有翻譯引擎均失敗: {em}"), 502
     except Exception as e:
         print(f"[DEBUG] translate_api Exception: {e}")
         return jsonify(ok=False, error=str(e)), 500
@@ -10576,7 +10573,7 @@ def translate_api():
 
 def health():
 
-    return jsonify(ok=True, ts=get_now().strftime("%Y-%m-%d %H:%M:%S"))
+    return jsonify(ok=True, ts=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
 
@@ -10604,7 +10601,7 @@ def translate_options():
 
 
 
-# === ?批� ===
+# === 控制 ===
 
 @app.route("/send", methods=["POST"])
 
@@ -10765,7 +10762,7 @@ def autounmute():
 
 
 
-# === 銝𠰴� / 皜�鱓 / 銝贝? / ?芷膄 ===
+# === 上傳 / 清單 / 下載 / 刪除 ===
 
 
 
@@ -11016,7 +11013,7 @@ def delete_file():
 
 
 
-# ===== 鈭衤辣蝝�??Logs API =====
+# ===== 事件紀錄 Logs API =====
 
 
 
@@ -11072,7 +11069,7 @@ def api_logs_download():
 
 def api_logs_list():
 
-    date_s = request.args.get("date", "").strip() or get_now().strftime("%Y-%m-%d")
+    date_s = request.args.get("date", "").strip() or datetime.now().strftime("%Y-%m-%d")
 
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_s): return jsonify(ok=False, error="bad date"), 400
 
@@ -11161,8 +11158,8 @@ def state():
     out["relay"] = STATE.get("relay", {})
     out["relay_auto_on"] = RELAY_AUTO_ON
 
-    out["ts"] = get_now().strftime("%Y-%m-%d %H:%M:%S")
-    # 撠?Relay4 ?�?衤??惩�甇日�𡁶鍂?�?衤???
+    out["ts"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # 將 Relay4 狀態也加入此通用狀態介面
     out["relay4"] = STATE.get("relay4") or {
         "port": RELAY4_INFO.get("port") or RELAY4_PORT or "",
         "ch_state": RELAY4_INFO.get("ch_state") or {1: 0, 2: 0, 3: 0, 4: 0},
@@ -11188,39 +11185,39 @@ def api_relay_config():
 
 
 
-# ===== 隤脰” API =====
+# ===== 課表 API =====
 
 
 
 def _validate_timetable(j: dict) -> tuple[bool, str | None]:
 
-    if not isinstance(j, dict): return False, "payload 敹�???JSON ?拐辣"
+    if not isinstance(j, dict): return False, "payload 必須是 JSON 物件"
 
     items = j.get("items", [])
 
-    if not isinstance(items, list): return False, "items 敹�??舫腼??
+    if not isinstance(items, list): return False, "items 必須是陣列"
 
     for i, it in enumerate(items):
 
-        if not isinstance(it, dict): return False, f"items[{i}] 銝齿糓?拐辣"
+        if not isinstance(it, dict): return False, f"items[{i}] 不是物件"
 
         t = (it.get("time") or "").strip()
 
-        if not re.match(r"^\d{2}:\d{2}$", t): return False, f"items[{i}].time ?�??HH:MM"
+        if not re.match(r"^\d{2}:\d{2}$", t): return False, f"items[{i}].time 需為 HH:MM"
 
         a = (it.get("action") or "").strip()
 
-        if not a: return False, f"items[{i}].action 銝滚虾蝛箇蒾"
+        if not a: return False, f"items[{i}].action 不可空白"
 
         if "date" in it:
 
-            if not re.match(r"^\d{4}-\d{2}-\d{2}$", str(it["date"])): return False, f"items[{i}].date ?�??YYYY-MM-DD"
+            if not re.match(r"^\d{4}-\d{2}-\d{2}$", str(it["date"])): return False, f"items[{i}].date 需為 YYYY-MM-DD"
 
         else:
 
             d = it.get("dow")
 
-            if d not in (1,2,3,4,5,6,7): return False, f"items[{i}].dow 敹�???1..7"
+            if d not in (1,2,3,4,5,6,7): return False, f"items[{i}].dow 必須是 1..7"
 
     return True, None
 
@@ -11354,11 +11351,11 @@ def api_set_holidays():
 
 def api_timetable_import_holidays():
 
-    """敺噼??輸堺鈭箔?銵峕錇蝮質? (via CDN) ?臬�?啁�?见??�𠯫 (?�??喉?銝滚?瑼?"""
+    """從行政院人事行政總處 (via CDN) 匯入台灣國定假日 (僅回傳，不存檔)"""
 
-    # ?𡑒岫?臬�隞𠰴僑?�?撟?
+    # 嘗試匯入今年與明年
 
-    target_years = [get_now().year, get_now().year + 1]
+    target_years = [datetime.now().year, datetime.now().year + 1]
 
     fetched_holidays = {} # date -> {week, desc}
 
@@ -11404,7 +11401,7 @@ def api_timetable_import_holidays():
 
 
 
-        # ?𧼮�?枏�?�??嗵策?滨垢嚗𣬚眏?滨垢瘙箏??臬炏?�蔥
+        # 回傳抓到的資料給前端，由前端決定是否合併
 
         # return list of objects
 
@@ -11438,7 +11435,7 @@ def api_timetable_import_holidays():
 
 def _helper_ensure_tt_defaults():
 
-    """蝣箔? timetable_data ?厰?閮剖�?""
+    """確保 timetable_data 有預設值"""
 
     global timetable_data, timetable_enabled
 
@@ -11481,7 +11478,7 @@ def api_timetable_reload():
 
 def _auto_watch_timetable():
 
-    """瘥?30 蝘埝炎??timetable.json ?臬炏鋡怠??冽凒?堆??交??�䌊?閖?頛剹�?""
+    """每 30 秒檢查 timetable.json 是否被外部更新，若有則自動重載。"""
 
     try:
 
@@ -11499,11 +11496,11 @@ def _auto_watch_timetable():
 
             if m and _TIMETABLE_MTIME and m > _TIMETABLE_MTIME:
 
-                text_area_insert("?菜葫??timetable.json 霈𦠜凒嚗�歇?芸??滩???, "Timetable")
+                text_area_insert("偵測到 timetable.json 變更，已自動重載。", "Timetable")
 
                 _load_timetable_from_disk()
 
-        # ?嘥??�虾??None嚗�神?乩?甈?
+        # 初始時可能 None，寫入一次
 
         if _TIMETABLE_MTIME is None and os.path.isfile(TIMETABLE_PATH):
 
@@ -11525,7 +11522,7 @@ def _auto_watch_timetable():
 
 def _auto_watch_schedules():
 
-    """瘥?30 蝘埝炎??schedules.json ?臬炏鋡怠??冽凒?堆??交??�䌊?閖?頛劐蒂?瑟鰵 UI??""
+    """每 30 秒檢查 schedules.json 是否被外部更新，若有則自動重載並刷新 UI。"""
 
     try:
 
@@ -11545,13 +11542,13 @@ def _auto_watch_schedules():
 
                 try:
 
-                    ui_safe(text_area_insert, " ?菜葫??schedules.json 霈𦠜凒嚗�歇?芸??滩???, "Schedules")
+                    ui_safe(text_area_insert, " 偵測到 schedules.json 變更，已自動重載。", "Schedules")
 
                 except Exception:
 
                     pass
 
-                # ?滩?銝行凒??UI
+                # 重載並更新 UI
 
                 data = _load_schedules_from_disk()
 
@@ -11581,7 +11578,7 @@ def _auto_watch_schedules():
 
 def api_timetable_enable():
 
-    """?毺鍂/?𦦵鍂?芸??㯄?"""
+    """啟用/停用自動打鐘"""
 
     global timetable_enabled
 
@@ -11608,11 +11605,11 @@ def api_timetable_enable():
 
 
 
-        # ?峕郊敺𣬚垢 GUI嚗�𥅾?匧???Tk 銝餅綉?堆?
+        # 同步後端 GUI（若有啟動 Tk 主控台）
 
         def _apply_ui():
 
-            status = " 閬誩?隞餃?嚗𡁜??? if enabled else " 閬誩?隞餃?嚗𡁜???
+            status = " 規律任務：啟用" if enabled else " 規律任務：停用"
 
             if 'timetable_status_var' in globals():
 
@@ -11661,7 +11658,7 @@ def api_timetable_set():
     # Sync to cloud
     sync_cloud_section("timetable", payload)
 
-    try: text_area_insert(f"撌脰?撖怨玨銵剁?{len(timetable_data.get('items', []))} 蝑�?enabled={timetable_enabled}嚗?)
+    try: text_area_insert(f"已覆寫課表：{len(timetable_data.get('items', []))} 筆（enabled={timetable_enabled}）")
     except Exception: pass
     return jsonify(ok=True, count=len(timetable_data.get("items", [])), enabled=bool(timetable_data.get("enabled", True)))
 
@@ -11720,7 +11717,7 @@ def api_timetable_play():
 
 # ===============================
 
-# == [ANCHOR] /schedules API ?�?蝡航憚閰?==
+# == [ANCHOR] /schedules API 與後端輪詢 ==
 
 # ===============================
 
@@ -11770,7 +11767,7 @@ def api_post_schedules():
 
         data = _get_json_tolerant()
 
-        # ?舀螱?桃? dict ?硋?蝑?list嚗𥟇?蝯�神?交?獢��??list[dict]
+        # 支援單筆 dict 或多筆 list；最終寫入檔案都用 list[dict]
 
         if isinstance(data, dict):
 
@@ -11786,7 +11783,7 @@ def api_post_schedules():
 
 
 
-        # ?箸𧋦瑼Ｘ瓲嚗𡁏?蝑��??dict
+        # 基本檢核：每筆都是 dict
 
         for i, it in enumerate(payload):
 
@@ -11830,7 +11827,7 @@ def api_post_schedules():
 
         try:
 
-            ui_safe(lambda: (refresh_sched_tree(), text_area_insert(" ?芾??垍?撌脫凒?堆?/schedules 銝𠰴�嚗?, "Web")))
+            ui_safe(lambda: (refresh_sched_tree(), text_area_insert(" 自訂排程已更新（/schedules 上傳）", "Web")))
 
         except Exception:
 
@@ -11846,7 +11843,7 @@ def api_post_schedules():
 
 def _load_schedules_from_disk():
 
-    """霈�??schedules.json嚗䔶蒂?湔鰵靽格㺿?�?嚗䔶? UI/?滨垢?峕郊??""
+    """讀取 schedules.json，並更新修改時間，供 UI/前端同步。"""
 
     global _SCHEDULES_MTIME
 
@@ -11864,7 +11861,7 @@ def _load_schedules_from_disk():
 
             if isinstance(data, list):
 
-                # 蝣箔?瘥讐??舐�隞?
+                # 確保每筆是物件
 
                 fixed = []
 
@@ -11914,7 +11911,7 @@ def schedules_scheduler_loop():
 
             if items:
 
-                now = get_now()
+                now = datetime.now()
 
                 ymd = now.strftime('%Y-%m-%d')
 
@@ -11932,13 +11929,13 @@ def schedules_scheduler_loop():
 
                         continue
 
-                    # ?舀螱?格活?鞟? (date)
+                    # 支援單次預約 (date)
                     target_date = it.get('date')
                     if target_date:
                         if target_date != ymd:
                             continue
                     else:
-                        # ?芣??冽??㗇?摰?date ?�?瑼Ｘ䰻?�?撟?
+                        # 只有在沒有指定 date 時才檢查星期幾
 
                         days = it.get('days') or []
 
@@ -11994,7 +11991,7 @@ def schedules_scheduler_loop():
 
                         handle_msg(payload, 'Schedules')
 
-            prefix = get_now().strftime('%Y-%m-%d')
+            prefix = datetime.now().strftime('%Y-%m-%d')
 
             _schedules_last_fired = {k for k in _schedules_last_fired if prefix in k}
 
@@ -12002,7 +11999,7 @@ def schedules_scheduler_loop():
 
             try:
 
-                text_area_insert(f'?𩤃? /schedules ?垍??券𥲤隤歹?{e}')
+                text_area_insert(f'⚠️ /schedules 排程器錯誤：{e}')
 
             except Exception:
 
@@ -12014,7 +12011,7 @@ def schedules_scheduler_loop():
 
 def _compute_next_schedule_status(items):
 
-    now = get_now()
+    now = datetime.now()
 
     best = None  # (dt, item, idx)
 
@@ -12152,7 +12149,7 @@ def api_schedules_status():
 
 
 
-# ===== ?芾?敹恍�罸枤 API =====
+# ===== 自訂快速鍵 API =====
 
 @app.get('/api/shortcuts')
 
@@ -12247,7 +12244,7 @@ def api_play_shortcut():
 
                         play_sound(START_SOUND)
 
-                    text_area_insert(f"隤鮋𨺗?剜𦆮嚗�翰?瘀?嚗㝯text}", "Shortcut")
+                    text_area_insert(f"語音播放（快捷）：{text}", "Shortcut")
 
                     save_to_csv("Shortcut:TTS", "WebShortcut")
 
@@ -12359,7 +12356,7 @@ def api_play_shortcut():
 
 
 
-# ===== Piper HTTP 隞钅𢒰 =====
+# ===== Piper HTTP 介面 =====
 
 @app.get("/piper/config")
 
@@ -12417,7 +12414,7 @@ def piper_speak():
 
     def _run():
 
-        # ?芸?甇方?瘙�麱?�撥??piper
+        # 只對此請求暫時強制 piper
 
         global PIPER_FORCE
 
@@ -12441,9 +12438,9 @@ def piper_speak():
 
 
 
-# ===== Taigi 蝧餉陌 / TTS 隞?? =====
+# ===== Taigi 翻譯 / TTS 代理 =====
 
-# 靘苷蝙?刻��?瘙�??游??啣?敺𣬚垢嚗䔶?敶梢𣳽?Ｘ??蠘�
+# 依使用者需求：整合到原後端，不影響既有功能
 
 TAIGI_TRANSLATE_API_KEY = os.getenv("TAIGI_TRANSLATE_API_KEY", "apiKey_b1a9e2e0-7c4f-4d5a-b8c1-92b6e25a4b6e6")
 
@@ -12524,17 +12521,17 @@ class TaigiTTSClient:
 
     def synthesize(self, text: str, voice: str = "normal_f2", model: str = "model6", speed: float = 1.0, user_id: str = ""):
         """
-        ?澆㙈?啗? TTS API ?硋??單??????
+        呼叫台語 TTS API 取得音檔連結。
         
         Args:
-            text (str): 甈脣??鞟??啗??�? (撱箄降雿輻鍂瞍Ｗ??𡝗慰蝢�毽????
-            voice (str): 'normal_m2' (?? ??'normal_f2' (憟???
-            model (str): ?鞱身 'model6' (擃睃?鞈???
-            speed (float): 隤鮋�麄�?
-            user_id (str): 雿輻鍂??ID??
+            text (str): 欲合成的台語文字 (建議使用漢字或漢羅混合)。
+            voice (str): 'normal_m2' (男) 或 'normal_f2' (女)。
+            model (str): 預設 'model6' (高品質)。
+            speed (float): 語速。
+            user_id (str): 使用者 ID。
         
         Returns:
-            str: ?單?銝贝? URL (72撠𤩺??㗇?)??
+            str: 音檔下載 URL (72小時有效)。
         """
         payload = {
             "text": text,
@@ -12545,11 +12542,11 @@ class TaigiTTSClient:
         }
 
         try:
-            # 雿輻鍂 _post_with_fallback 靽脲??�?蝟餌絞銝�?渡?蝬脰楝隢𧢲??讛摩 (?交??�閬?
-            # 雿�迨?閧??砌蝙??requests.post嚗峕??𤑳凒?乩蝙??requests.post ?喳虾嚗?
-            # ?删� _post_with_fallback ?航身閮�策憭𡁜�?URL ?��?
-            # ?躰ㄐ?芣?銝�??URL嚗𣬚凒?亦鍂 requests.post??
-            # ?箔?靽脲??�?蝔见?蝣潛??航炊?閧?銝�?湔�改??穃�𤑳?雿𡏭矽?氬�?
+            # 使用 _post_with_fallback 保持與原系統一致的網路請求邏輯 (若有需要)
+            # 但此處範本使用 requests.post，我們直接使用 requests.post 即可，
+            # 因為 _post_with_fallback 是設計給多個 URL 的。
+            # 這裡只有一個 URL，直接用 requests.post。
+            # 為了保持與原程式碼的錯誤處理一致性，我們稍作調整。
             
             response = requests.post(self.api_url, headers=self.headers, data=json.dumps(payload), timeout=30)
             
@@ -12557,11 +12554,11 @@ class TaigiTTSClient:
                 data = response.json()
                 return data.get("converted_audio_url")
             elif response.status_code == 400:
-                raise TaigiTTSException(f"?�彍?航炊 (400): {response.text}", status=400)
+                raise TaigiTTSException(f"參數錯誤 (400): {response.text}", status=400)
             elif response.status_code == 401:
-                raise TaigiTTSException("API Key ?⊥? (401)", status=401)
+                raise TaigiTTSException("API Key 無效 (401)", status=401)
             elif response.status_code == 429:
-                raise TaigiTTSException("隢𧢲??餌??𡡞? (429)", status=429)
+                raise TaigiTTSException("請求頻率過高 (429)", status=429)
             else:
                 raise TaigiTTSException(f"TTS_HTTP_{response.status_code}", status=502, detail=response.text)
                 
@@ -12571,7 +12568,7 @@ class TaigiTTSClient:
             raise TaigiTTSException("TTS_EXCEPTION", status=500, detail=str(e))
 
     def download_audio(self, url: str, save_path: str):
-        """銝贝? WAV 瑼娍??唳𧋦??""
+        """下載 WAV 檔案到本地"""
         if not url:
             return
         
@@ -12582,7 +12579,7 @@ class TaigiTTSClient:
                     for chunk in resp.iter_content(chunk_size=8192):
                         if chunk:
                             f.write(chunk)
-                # print(f"瑼娍?撌脣�摮䁅秐: {save_path}")
+                # print(f"檔案已儲存至: {save_path}")
             else:
                 raise TaigiTTSException(f"DOWNLOAD_HTTP_{resp.status_code}", status=502)
         except Exception as e:
@@ -12595,10 +12592,10 @@ def _taigi_generate_audio_file(text: str, voice_mode: str | None, speed: float =
 
     voice_label, tag = _resolve_taigi_voice_label(voice_mode)
     
-    # 撖虫???Client
+    # 實例化 Client
     client = TaigiTTSClient(api_key=TAIGI_TTS_API_KEY)
     
-    # ?澆㙈?�?
+    # 呼叫合成
     try:
         url = client.synthesize(text, voice=voice_label, speed=speed, user_id=user_id)
     except TaigiTTSException:
@@ -12613,7 +12610,7 @@ def _taigi_generate_audio_file(text: str, voice_mode: str | None, speed: float =
     fname = f"{base}_{tag}_{_now_tag()}.wav"
     save_path = os.path.join(TAIGI_AUDIO_DIR, fname)
 
-    # 銝贝?
+    # 下載
     client.download_audio(url, save_path)
 
     if os.path.getsize(save_path) < 44:
@@ -12772,11 +12769,11 @@ def taigi_audio(filename):
 
 def taigi_say():
 
-    """銝�甈∪??琜??舫�?䔶葉??>?啗?蝧餉陌?㵪? TTS嚗䔶蒂?舫�?�糓?血銁?祆??湔𦻖?剜𦆮嚗�誨?哨???
+    """一次完成：可選「中文->台語翻譯」＋ TTS，並可選擇是否在本機直接播放（廣播）。
 
-    - play=True ?𡝗𧊋?𣂷?嚗𡁜??𣂼?嚗屸�誯? taigi_play_wav_with_fx() 撱?偘?剜𦆮
+    - play=True 或未提供：合成後，透過 taigi_play_wav_with_fx() 廣播播放
 
-    - play=False嚗𡁜蘨?Ｙ?瑼娍??�?頛厩雯?�嚗䔶??笔?撱?偘嚗�策?滨垢閰西�嚗譍?頛厩鍂嚗?
+    - play=False：只產生檔案與下載網址，不啟動廣播（給前端試聽／下載用）
 
     """
 
@@ -12790,7 +12787,7 @@ def taigi_say():
 
         direction = (j.get("direction") or "raw").lower()
 
-        # ?芣? direction == "zh2nan" ?滚?蝧餉陌嚗𥕦�擗矋?raw嚗匧停?湔𦻖??text ??TTS
+        # 只有 direction == "zh2nan" 才先翻譯；其餘（raw）就直接用 text 去 TTS
 
 
 
@@ -12800,7 +12797,7 @@ def taigi_say():
 
 
 
-        # 閫?? play ?埈?嚗𡁻?閮?True嚗?0"/"false" 蝑㕑??粹???
+        # 解析 play 旗標：預設 True，"0"/"false" 等視為關閉
 
         play_raw = j.get("play", True)
 
@@ -12820,7 +12817,7 @@ def taigi_say():
 
 
 
-        # ?�蕃霅荔?敹�??�?
+        # 先翻譯（必要時）
 
         if direction == "zh2nan":
 
@@ -12842,7 +12839,7 @@ def taigi_say():
 
 
 
-        # ?�?銝血?瑼䈑?瘝輻鍂 /taigi/tts ?讛摩嚗?
+        # 合成並存檔（沿用 /taigi/tts 邏輯）
 
         try:
             result = _taigi_generate_audio_file(text, voice_mode, speed=speed, user_id=user_id)
@@ -12861,7 +12858,7 @@ def taigi_say():
 
 
 
-        # 閬㚚?閬�??訫誨?剜偘?橘??鮋獈憛痹?
+        # 視需要啟動廣播播放（非阻塞）
 
         if play and file_name:
 
@@ -12871,7 +12868,7 @@ def taigi_say():
 
                     p = os.path.join(TAIGI_AUDIO_DIR, file_name)
 
-                    taigi_play_wav_with_fx(p)  # 憟㛖鍂?湔𦻖?剜𦆮閬𤩺聢嚗㇌elay嚗见?撠?蝯鞉?嚗?
+                    taigi_play_wav_with_fx(p)  # 套用直接播放規格（Relay＋前導/結束）
 
                 except Exception as e:
 
@@ -12899,7 +12896,7 @@ def taigi_say():
 
 def udp_listener():
 
-    text_area_insert(f" UDP ??�?笔?嚗?.0.0.0:{PORT}", src="UDP")
+    text_area_insert(f" UDP 監聽啟動：0.0.0.0:{PORT}", src="UDP")
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -12919,7 +12916,7 @@ def udp_listener():
 
         except Exception as e:
 
-            text_area_insert(f"UDP ?航炊嚗㝯e}")
+            text_area_insert(f"UDP 錯誤：{e}")
 
             time.sleep(0.2)
 
@@ -13121,7 +13118,7 @@ except Exception:
 
 # ===============================
 
-# == [ANCHOR] ngrok (?舫�) ==
+# == [ANCHOR] ngrok (可選) ==
 
 # ===============================
 
@@ -13155,7 +13152,7 @@ def start_ngrok(force=False):
 
     if not exe:
 
-        text_area_insert("[ngrok] ?芣𪄳??ngrok嚗�虾撠?USE_NGROK=False ?硋?鋆?ngrok", src="System"); return
+        text_area_insert("[ngrok] 未找到 ngrok，可將 USE_NGROK=False 或安裝 ngrok", src="System"); return
 
     try:
 
@@ -13183,7 +13180,7 @@ def start_ngrok(force=False):
 
         try:
 
-            ui_safe(ngrok_status_label.config, text=f" ngrok嚗㝯STATE.get('ngrok_url') or '?芸?敺?URL'}")
+            ui_safe(ngrok_status_label.config, text=f" ngrok：{STATE.get('ngrok_url') or '未取得 URL'}")
 
         except Exception:
 
@@ -13191,7 +13188,7 @@ def start_ngrok(force=False):
 
     except Exception as e:
 
-        try: ui_safe(ngrok_status_label.config, text=f" ngrok ?笔?憭望?嚗㝯e}")
+        try: ui_safe(ngrok_status_label.config, text=f" ngrok 啟動失敗：{e}")
 
         except Exception: pass
 
@@ -13199,7 +13196,7 @@ def start_ngrok(force=False):
 
     
 
-    # ?𣂼??笔?敺峕凒?唳??閧???
+    # 成功啟動後更新按鈕狀態
 
     if STATE.get("ngrok_url"):
 
@@ -13233,7 +13230,7 @@ def stop_ngrok():
 
     _ngrok_proc = None
 
-    try: ui_safe(ngrok_status_label.config, text=" ngrok嚗𡁜歇?见??𨀣迫", fg=THEME["fg_sub"])
+    try: ui_safe(ngrok_status_label.config, text=" ngrok：已手動停止", fg=THEME["fg_sub"])
 
     except: pass
 
@@ -13245,33 +13242,33 @@ def stop_ngrok():
 
 # ===============================
 
-# == [ANCHOR] Tkinter UI嚗? ?�?嚗?==
+# == [ANCHOR] Tkinter UI（4 分頁） ==
 
 # ===============================
 
-#  撠�平?�??脖蜓憿?
+#  專業版配色主題
 
 THEME = {
 
-    "bg_root": "#F3F4F6",       # ?𥪜??啁蒾?峕艶
+    "bg_root": "#F3F4F6",       # 柔和灰白背景
 
-    "bg_header": "#1E293B",     # 瘛梯???Header
+    "bg_header": "#1E293B",     # 深藍灰 Header
 
-    "fg_header": "#F8FAFC",     # Header ?�?
+    "fg_header": "#F8FAFC",     # Header 文字
 
-    "bg_card": "#FFFFFF",       # ?∠??賢?
+    "bg_card": "#FFFFFF",       # 卡片白底
 
-    "bg_status": "#FFFFFF",     # ?�?见??賢?
+    "bg_status": "#FFFFFF",     # 狀態列白底
 
-    "fg_text": "#1F2937",       # 瘛梁�?�?
+    "fg_text": "#1F2937",       # 深灰文字
 
-    "fg_sub": "#6B7280",        # 瘛箇�隤芣??�?
+    "fg_sub": "#6B7280",        # 淺灰說明文字
 
-    "accent": "#3B82F6",        # ?𣂷漁??
+    "accent": "#3B82F6",        # 提亮藍
 
-    "border": "#E5E7EB",        # ?𦠜?
+    "border": "#E5E7EB",        # 邊框
 
-    "btn_bg": "#FFFFFF",        # ?厰??峕艶
+    "btn_bg": "#FFFFFF",        # 按鈕背景
 
     "font_main": ("Microsoft JhengHei UI", 9),
 
@@ -13282,13 +13279,13 @@ THEME = {
 }
 
 # ====================================================
-# == [ANCHOR] HEADLESS MODE (Render / ?⊥??Ｙ兛憓? ==
+# == [ANCHOR] HEADLESS MODE (Render / 無桌面環境) ==
 # ====================================================
 if not _HAS_TKINTER:
-    # ??tkinter嚗𡁶凒?亙??閙??匧??唳??嗘蒂?餃?嚗�?撱箸? GUI嚗?
-    print("[HEADLESS] No tkinter ??starting web-only mode")
+    # 無 tkinter：直接啟動所有後台服務並阻塞（不建構 GUI）
+    print("[HEADLESS] No tkinter – starting web-only mode")
 
-    # 摰𡁶儔銝�?讠征??root ?蹂誨?抬??支? after() 銋见?撟曆??賭??�閬�?
+    # 定義一個空的 root 替代物（除了 after() 之外幾乎都不需要）
     class _FakeRoot:
         def after(self, *a, **kw): pass
         def mainloop(self): pass
@@ -13302,7 +13299,7 @@ if not _HAS_TKINTER:
         def iconphoto(self, *a): pass
     root = _FakeRoot()
 
-    # ?笔??�?㕑??臬嘑銵𣬚?
+    # 啟動所有背景執行緒
     threading.Thread(target=speech_worker, daemon=True).start()
     threading.Thread(target=youtube_worker, daemon=True).start()
     threading.Thread(target=mp3_worker, daemon=True).start()
@@ -13317,7 +13314,7 @@ if not _HAS_TKINTER:
     if 'student_udp_listener' in globals():
         threading.Thread(target=student_udp_listener, daemon=True).start()
 
-    # ?笔? Flask Web Server嚗�??圈獈憛痹?
+    # 啟動 Flask Web Server（前台阻塞）
     print(f"[HEADLESS] Starting Flask on 0.0.0.0:{HTTP_PORT}")
     try:
         app.run(host="0.0.0.0", port=int(os.environ.get("PORT", HTTP_PORT)),
@@ -13328,20 +13325,20 @@ if not _HAS_TKINTER:
     _sys_exit.exit(0)
 
 # ====================================================
-# == [ANCHOR] GUI MODE (Windows 獢屸𢒰?啣?) ==
+# == [ANCHOR] GUI MODE (Windows 桌面環境) ==
 # ====================================================
 
 root = tk.Tk()
 
 
 
-# [ANCHOR] 閮剖? AppUserModelID ??ICON
+# [ANCHOR] 設定 AppUserModelID 與 ICON
 
-# ?蹱糓霈?Windows 撌乩??𡑒�憿舐內甇?Ⅱ?𣇉內?�??蛛?敹�??冽迨閮剖?
+# 這是讓 Windows 工作列能顯示正確圖示的關鍵，必須在此設定
 
 try:
 
-    myappid = 'mycompany.relaybell.client.1228v1' # 隞餅?摮𦯀葡嚗�𣈲銝�?喳虾
+    myappid = 'mycompany.relaybell.client.1228v1' # 任意字串，唯一即可
 
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
@@ -13380,7 +13377,7 @@ except Exception as e:
 
 
 
-root.title("OmniSignal | 撠�平?典?撱?偘蝟餌絞")
+root.title("OmniSignal | 專業全域廣播系統")
 
 root.geometry("1024x768")
 
@@ -13390,7 +13387,7 @@ root.configure(bg=THEME["bg_root"])
 
 
 
-# 閮剖? ttk 銝駁?
+# 設定 ttk 主題
 
 style = ttk.Style()
 
@@ -13426,7 +13423,7 @@ style.map("Treeview", background=[("selected", THEME["accent"])], foreground=[("
 
 def _lighten_hex(color: str, delta: int = 18) -> str:
 
-    """蝪∪鱓鈭??𡑒矽?游??剝�脖??脩Ⅳ嚗𥕦仃?堒??𧼮�?蠘𠧧??""
+    """簡單亮/暗調整十六進位色碼；失敗則回傳原色。"""
 
     try:
 
@@ -13496,7 +13493,7 @@ try:
 
 except Exception as e:
 
-    print("LOGO 頛匧�憭望?嚗?, e)
+    print("LOGO 載入失敗：", e)
 
 
 
@@ -13504,7 +13501,7 @@ header = tk.Frame(root, bg=THEME["bg_header"], height=50)
 
 header.pack(fill="x")
 
-tk.Label(header, text="UDP 撱?偘隤鮋𨺗?交𤣰隡箸???, fg=THEME["fg_header"], bg=THEME["bg_header"],
+tk.Label(header, text="UDP 廣播語音接收伺服器", fg=THEME["fg_header"], bg=THEME["bg_header"],
 
          font=("Microsoft JhengHei UI", 14, "bold")).pack(side="left", padx=16, pady=10)
 
@@ -13522,15 +13519,15 @@ def open_timetable_tab():
 
     try: notebook.select(tab_tt)
 
-    except Exception: messagebox.showinfo("隤脰”", "隤脰”?�?撠𡁏𧊋撱箇?")
+    except Exception: messagebox.showinfo("課表", "課表分頁尚未建立")
 
 
 
 
 
-btn_cancel = tk.Button(header_tools, text="??撘瑕�?𡝗?",
+btn_cancel = tk.Button(header_tools, text="⏹ 強制取消",
 
-                       command=lambda: handle_msg("CancelALL", ("?祆?",)),
+                       command=lambda: handle_msg("CancelALL", ("本機",)),
 
                        bg="#EF4444", fg="white", relief="flat", font=THEME["font_s"], padx=8, pady=2)
 
@@ -13538,7 +13535,7 @@ btn_cancel.pack(side="left", padx=(0,8), pady=4)
 
 
 
-btn_clear = tk.Button(header_tools, text="皜�膄閮𦠜�",
+btn_clear = tk.Button(header_tools, text="清除訊息",
 
                       command=lambda: (text_area.delete("1.0", tk.END),
 
@@ -13546,7 +13543,7 @@ btn_clear = tk.Button(header_tools, text="皜�膄閮𦠜�",
 
                                        progress_text_var.set("0%"),
 
-                                       set_playing_status("??蝑匧??剜𦆮銝凌�?)),
+                                       set_playing_status("⏳ 等待播放中…")),
 
                       bg="#3B82F6", fg="white", relief="flat", font=THEME["font_s"], padx=8, pady=2)
 
@@ -13554,13 +13551,13 @@ btn_clear.pack(side="left", padx=(0,0), pady=4)
 
 
 
-ip_label = tk.Label(header_right, text=f"?祆? IP嚗㝯local_ip}", fg="#94A3B8", bg=THEME["bg_header"], font=THEME["font_s"])
+ip_label = tk.Label(header_right, text=f"本機 IP：{local_ip}", fg="#94A3B8", bg=THEME["bg_header"], font=THEME["font_s"])
 
 ip_label.pack(side="right", padx=(12,6))
 
 
 
-clock_var = tk.StringVar(value=get_now().strftime("%Y-%m-%d %H:%M:%S"))
+clock_var = tk.StringVar(value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 clock_label = tk.Label(header_right, textvariable=clock_var, fg="#94A3B8", bg=THEME["bg_header"], font=THEME["font_s"])
 
@@ -13570,7 +13567,7 @@ clock_label.pack(side="right", padx=(12, 6))
 
 def _tick_clock():
 
-    try: clock_var.set(get_now().strftime("%Y-%m-%d %H:%M:%S"))
+    try: clock_var.set(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     finally: root.after(1000, _tick_clock)
 
@@ -13584,13 +13581,13 @@ main_panel = tk.Frame(root, bg=THEME["bg_root"]); main_panel.pack(expand=True, f
 
 status_row = tk.Frame(main_panel, bg=THEME["bg_card"], padx=10, pady=5); status_row.pack(fill="x", pady=(0,0), padx=16)
 
-status_label = tk.Label(status_row, text=" 隤鮋𨺗?毺鍂銝?, fg="#059669", font=THEME["font_bold"], bg=THEME["bg_card"])
+status_label = tk.Label(status_row, text=" 語音啟用中", fg="#059669", font=THEME["font_bold"], bg=THEME["bg_card"])
 
 status_label.pack(side="left", padx=0, pady=5)
 
 
 
-ngrok_status_label = tk.Label(status_row, text=" ngrok嚗𡁏𧊋?笔?", font=THEME["font_s"], bg=THEME["bg_card"], fg=THEME["fg_sub"])
+ngrok_status_label = tk.Label(status_row, text=" ngrok：未啟動", font=THEME["font_s"], bg=THEME["bg_card"], fg=THEME["fg_sub"])
 
 ngrok_status_label.pack(side="left", padx=16)
 
@@ -13600,15 +13597,15 @@ ngrok_btn_frame = tk.Frame(status_row, bg=THEME["bg_card"]); ngrok_btn_frame.pac
 
 
 
-# ?啣??见??钅??厰? (Assign to variables only)
+# 新增手動開關按鈕 (Assign to variables only)
 
-ngrok_start_btn = tk.Button(ngrok_btn_frame, text="?笔? ngrok", bg="#D1FAE5", relief="flat", font=THEME["font_s"], command=lambda: start_ngrok(force=True))
+ngrok_start_btn = tk.Button(ngrok_btn_frame, text="啟動 ngrok", bg="#D1FAE5", relief="flat", font=THEME["font_s"], command=lambda: start_ngrok(force=True))
 
 ngrok_start_btn.pack(side="left", padx=(0, 4))
 
 
 
-ngrok_stop_btn = tk.Button(ngrok_btn_frame, text="?𨀣迫 ngrok", bg="#FEE2E2", relief="flat", font=THEME["font_s"], command=stop_ngrok)
+ngrok_stop_btn = tk.Button(ngrok_btn_frame, text="停止 ngrok", bg="#FEE2E2", relief="flat", font=THEME["font_s"], command=stop_ngrok)
 
 ngrok_stop_btn.pack(side="left", padx=(0, 6))
 
@@ -13618,33 +13615,33 @@ def update_ngrok_ui_state(is_running):
 
     if is_running:
 
-        ngrok_start_btn.config(state="disabled", text="?笔?銝?..", bg="#E5E7EB")
+        ngrok_start_btn.config(state="disabled", text="啟動中...", bg="#E5E7EB")
 
-        ngrok_stop_btn.config(state="normal", text="?𨀣迫 ngrok", bg="#FEE2E2")
+        ngrok_stop_btn.config(state="normal", text="停止 ngrok", bg="#FEE2E2")
 
     else:
 
-        ngrok_start_btn.config(state="normal", text="?笔? ngrok", bg="#D1FAE5")
+        ngrok_start_btn.config(state="normal", text="啟動 ngrok", bg="#D1FAE5")
 
-        ngrok_stop_btn.config(state="disabled", text="撌脣?甇?, bg="#E5E7EB")
+        ngrok_stop_btn.config(state="disabled", text="已停止", bg="#E5E7EB")
 
 
 
-# ?嘥??𡝗??閧???
+# 初始化按鈕狀態
 
 update_ngrok_ui_state(False)
 
 
 
-copy_btn = tk.Button(ngrok_btn_frame, text="銴�ˊ ngrok URL", bg="#F1F5F9", relief="flat", font=THEME["font_s"])
+copy_btn = tk.Button(ngrok_btn_frame, text="複製 ngrok URL", bg="#F1F5F9", relief="flat", font=THEME["font_s"])
 
 copy_btn.pack(side="left", padx=(0,6))
 
 
 
-# 嚗�??躰???label 隞亦雁?�?閫�嚗䔶?銝滚??典?敶�枂 QR嚗?
+# （保留舊的 label 以維持外觀，但不再用它彈出 QR）
 
-# 嚗�??躰???label 隞亦雁?�?閫�嚗䔶?銝滚??典?敶�枂 QR嚗?
+# （保留舊的 label 以維持外觀，但不再用它彈出 QR）
 
 qr_label = tk.Label(ngrok_btn_frame, bg=THEME["bg_card"]); qr_label.pack(side="left"); qr_label._visible = False
 
@@ -13652,11 +13649,11 @@ _qr_img_cache = None
 
 
 
-# === ?啣?嚗𡁻??笔?蝡?+ ?滨垢 QR嚗�崕蝡贝?蝒梹?===
+# === 新增：開啟前端 + 前端 QR（獨立視窗）===
 
-# === ?啣?嚗𡁻??笔?蝡?+ ?滨垢 QR嚗�崕蝡贝?蝒梹?===
+# === 新增：開啟前端 + 前端 QR（獨立視窗）===
 
-front_btn = tk.Button(ngrok_btn_frame, text="?见??滨垢嚗㇋R 閬𣇉?嚗?, bg="#F1F5F9", relief="flat",
+front_btn = tk.Button(ngrok_btn_frame, text="開啟前端（QR 視窗）", bg="#F1F5F9", relief="flat",
 
                       font=THEME["font_s"], command=open_frontend_and_qr_popup)
 
@@ -13664,9 +13661,9 @@ front_btn.pack(side="left", padx=(6,6))
 
 
 
-# 靽萘? label嚗�?雿輻鍂 toggle嚗㚁?蝬剜?憭𤥁?
+# 保留 label（不使用 toggle），維持外觀
 
-# 靽萘? label嚗�?雿輻鍂 toggle嚗㚁?蝬剜?憭𤥁?
+# 保留 label（不使用 toggle），維持外觀
 
 front_qr_label = tk.Label(ngrok_btn_frame, bg=THEME["bg_card"])
 
@@ -13682,19 +13679,19 @@ def copy_ngrok_url_and_qr_popup():
 
     if not url:
 
-        ui_safe(ngrok_status_label.config, text=" ngrok嚗𡁜??芸?敺?URL", fg="#b33"); return
+        ui_safe(ngrok_status_label.config, text=" ngrok：尚未取得 URL", fg="#b33"); return
 
     try:
 
         root.clipboard_clear(); root.clipboard_append(url)
 
-        ui_safe(ngrok_status_label.config, text=f" ngrok嚗㝯url}", fg="#074")
+        ui_safe(ngrok_status_label.config, text=f" ngrok：{url}", fg="#074")
 
     except Exception as e:
 
-        ui_safe(ngrok_status_label.config, text=f" 銴�ˊ憭望?嚗㝯e}", fg="#b33")
+        ui_safe(ngrok_status_label.config, text=f" 複製失敗：{e}", fg="#b33")
 
-    show_qr_popup("ngrok ?祉雯蝬脣? QR", url)
+    show_qr_popup("ngrok 公網網址 QR", url)
 
 
 
@@ -13714,13 +13711,13 @@ def restart_app():
 
 
 
-tk.Button(status_row, text=" ?滚?隡箸???, command=restart_app, bg="#F1F5F9", relief="flat",
+tk.Button(status_row, text=" 重啟伺服器", command=restart_app, bg="#F1F5F9", relief="flat",
 
           font=THEME["font_s"]).pack(side="right", padx=(6,8), pady=4)
 
 
 
-tk.Label(status_row, text=" 蝑匧??交𤣰閮𦠜�銝?..", font=THEME["font_s"], bg=THEME["bg_card"], fg=THEME["fg_sub"]).pack(side="right", padx=12)
+tk.Label(status_row, text=" 等待接收訊息中...", font=THEME["font_s"], bg=THEME["bg_card"], fg=THEME["fg_sub"]).pack(side="right", padx=12)
 
 
 
@@ -13728,21 +13725,21 @@ notebook = ttk.Notebook(main_panel); notebook.pack(expand=True, fill="both", pad
 
 
 
-# ---- Tab 1:  銝餅綉??----
+# ---- Tab 1:  主控台 ----
 
-tab_main = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_main, text=" 銝餅綉??)
-
-
-
-# ---- Tab X: 4?駵elay ----
-
-tab_relay4 = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_relay4, text=" 4?駵elay")
+tab_main = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_main, text=" 主控台")
 
 
 
-# Status label for 4?駵elay
+# ---- Tab X: 4‑Relay ----
 
-relay4_status_var = tk.StringVar(value="Port嚗尠�䈑?Cmd嚗尠�䈑?Result嚗尠�䈑?Err嚗尠�?)
+tab_relay4 = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_relay4, text=" 4‑Relay")
+
+
+
+# Status label for 4‑Relay
+
+relay4_status_var = tk.StringVar(value="Port：—｜Cmd：—｜Result：—｜Err：—")
 
 tk.Label(tab_relay4, textvariable=relay4_status_var, font=THEME["font_bold"], bg=THEME["bg_card"]).pack(fill="x", padx=16, pady=(8,4))
 
@@ -13756,7 +13753,7 @@ relay4_ctrl_frame.pack(fill="x", padx=16, pady=4)
 
 
 
-tk.Label(relay4_ctrl_frame, text="雿輻鍂 COM嚗?, font=THEME["font_s"], bg=THEME["bg_card"]).grid(row=0, column=0, sticky="w")
+tk.Label(relay4_ctrl_frame, text="使用 COM：", font=THEME["font_s"], bg=THEME["bg_card"]).grid(row=0, column=0, sticky="w")
 
 manual_relay4_var = tk.StringVar(value=get_manual_relay4_port() or (RELAY4_INFO.get("port") or "") or "COM5")
 
@@ -13768,7 +13765,7 @@ relay4_port_combo.grid(row=0, column=1, padx=4, pady=2, sticky="w")
 
 def apply_manual_relay4_port():
 
-    """?见??�? 4-Relay COM ?牐蒂撖怠� relay4_port.txt??""
+    """手動指定 4-Relay COM 埠並寫入 relay4_port.txt。"""
 
     global RELAY4_PORT
 
@@ -13778,7 +13775,7 @@ def apply_manual_relay4_port():
 
         if not port:
 
-            messagebox.showinfo("4-Relay", "隢见??豢? COM ??𦻖??)
+            messagebox.showinfo("4-Relay", "請先選擇 COM 連接埠")
 
             return
 
@@ -13800,11 +13797,11 @@ def apply_manual_relay4_port():
 
             _relay4_set("last_error", "")
 
-        messagebox.showinfo("4-Relay", f"撌脰身摰?4-Relay 雿輻鍂 {port}\n銝𧢲活?笔?銋�?憟㛖鍂")
+        messagebox.showinfo("4-Relay", f"已設定 4-Relay 使用 {port}\n下次啟動也會套用")
 
     except Exception as e:
 
-        messagebox.showerror("4-Relay", f"撖怠� relay4_port.txt 憭望?嚗䨵n{e}")
+        messagebox.showerror("4-Relay", f"寫入 relay4_port.txt 失敗：\n{e}")
 
     try:
 
@@ -13822,17 +13819,17 @@ def refresh_relay4_ui():
 
         relay4_status_var.set(
 
-            f"Port嚗㝯RELAY4_INFO.get('port') or RELAY4_PORT or '??'}  "
+            f"Port：{RELAY4_INFO.get('port') or RELAY4_PORT or '??'}  "
 
-            f"Cmd嚗㝯RELAY4_INFO.get('last_cmd') or '??'}  "
+            f"Cmd：{RELAY4_INFO.get('last_cmd') or '??'}  "
 
-            f"Result嚗㝯RELAY4_INFO.get('last_result') or '??'}  "
+            f"Result：{RELAY4_INFO.get('last_result') or '??'}  "
 
-            f"Err嚗㝯RELAY4_INFO.get('last_error') or '??'}"
+            f"Err：{RELAY4_INFO.get('last_error') or '??'}"
 
         )
 
-        # ?湔鰵?𡁻??�?钅＊蝷?
+        # 更新通道狀態顯示
 
         st = RELAY4_INFO.get("ch_state") or {}
 
@@ -13840,7 +13837,7 @@ def refresh_relay4_ui():
 
             state_txt = "ON" if st.get(ch) else "OFF"
 
-            var.set(f"CH{ch}嚗㝯state_txt}")
+            var.set(f"CH{ch}：{state_txt}")
 
         devs = list_4relay_candidate_ports()
 
@@ -13868,7 +13865,7 @@ def refresh_relay4_ui():
 
 
 
-tk.Button(relay4_ctrl_frame, text="憟㛖鍂", command=apply_manual_relay4_port, bg="#F3F4F6", relief="flat", font=THEME["font_s"]).grid(row=0, column=2, padx=4, pady=2)
+tk.Button(relay4_ctrl_frame, text="套用", command=apply_manual_relay4_port, bg="#F3F4F6", relief="flat", font=THEME["font_s"]).grid(row=0, column=2, padx=4, pady=2)
 
 
 
@@ -13880,11 +13877,11 @@ def relay4_rescan():
 
 
 
-tk.Button(relay4_ctrl_frame, text="?齿鰵?�?", command=relay4_rescan, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).grid(row=0, column=3, padx=4, pady=2)
+tk.Button(relay4_ctrl_frame, text="重新掃描", command=relay4_rescan, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).grid(row=0, column=3, padx=4, pady=2)
 
 
 
-# ?𡁻??批�嚗�極璆剝◢?鍦?嚗𡁶??页??厰?嚗?
+# 通道控制（工業風排列：狀態＋按鈕）
 
 relay4_btns_row = tk.Frame(relay4_ctrl_frame, bg=THEME["bg_card"])
 
@@ -13898,7 +13895,7 @@ for ch in range(1,5):
 
     cell.pack(side="left")
 
-    sv = tk.StringVar(value=f"CH{ch}嚗尠�?)
+    sv = tk.StringVar(value=f"CH{ch}：—")
 
     relay4_ch_labels[ch] = sv
 
@@ -13916,15 +13913,15 @@ refresh_relay4_ui()
 
 
 
-# ---- Tab EEW: ?圈?霅血𥼚 ----
+# ---- Tab EEW: 地震警報 ----
 
-tab_eew = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_eew, text=" ?圈? (EEW)")
+tab_eew = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_eew, text=" 地震 (EEW)")
 
 
 
 # Status
 
-eew_status_var = tk.StringVar(value="頛匧�銝?..")
+eew_status_var = tk.StringVar(value="載入中...")
 
 tk.Label(tab_eew, textvariable=eew_status_var, font=THEME["font_bold"], bg=THEME["bg_card"], fg="#DC2626").pack(fill="x", padx=16, pady=(8,4))
 
@@ -13938,7 +13935,7 @@ eew_ctrl_frame.pack(fill="x", padx=16, pady=4)
 
 
 
-tk.Label(eew_ctrl_frame, text="閮剖?嚗?, font=THEME["font_bold"], bg=THEME["bg_card"]).pack(side="left", padx=8, pady=8)
+tk.Label(eew_ctrl_frame, text="設定：", font=THEME["font_bold"], bg=THEME["bg_card"]).pack(side="left", padx=8, pady=8)
 
 
 
@@ -13962,7 +13959,7 @@ def _auto_sync_cwa_chk(*args):
 
 eew_enable_var.trace_add("write", _auto_sync_cwa_chk)
 
-chk_eew_en = tk.Checkbutton(eew_ctrl_frame, text="?毺鍂?芸?頛芾岷", variable=eew_enable_var, bg=THEME["bg_card"], font=THEME["font_main"])
+chk_eew_en = tk.Checkbutton(eew_ctrl_frame, text="啟用自動輪詢", variable=eew_enable_var, bg=THEME["bg_card"], font=THEME["font_main"])
 
 chk_eew_en.pack(side="left", padx=8)
 
@@ -13984,13 +13981,13 @@ def _auto_sync_cwa_bc_chk(*args):
 
 eew_broadcast_var.trace_add("write", _auto_sync_cwa_bc_chk)
 
-chk_eew_bc = tk.Checkbutton(eew_ctrl_frame, text="?毺鍂霅血𥼚撱?偘", variable=eew_broadcast_var, bg=THEME["bg_card"], font=THEME["font_main"])
+chk_eew_bc = tk.Checkbutton(eew_ctrl_frame, text="啟用警報廣播", variable=eew_broadcast_var, bg=THEME["bg_card"], font=THEME["font_main"])
 
 chk_eew_bc.pack(side="left", padx=8)
 
 
 
-tk.Label(eew_ctrl_frame, text="?㯄?(s)嚗?, bg=THEME["bg_card"]).pack(side="left", padx=2)
+tk.Label(eew_ctrl_frame, text="間隔(s)：", bg=THEME["bg_card"]).pack(side="left", padx=2)
 
 eew_poll_var = tk.StringVar(value="60")
 
@@ -13998,7 +13995,7 @@ tk.Entry(eew_ctrl_frame, textvariable=eew_poll_var, width=4).pack(side="left", p
 
 
 
-tk.Label(eew_ctrl_frame, text="Key嚗?, bg=THEME["bg_card"]).pack(side="left", padx=2)
+tk.Label(eew_ctrl_frame, text="Key：", bg=THEME["bg_card"]).pack(side="left", padx=2)
 
 eew_key_var = tk.StringVar(value="")
 
@@ -14006,11 +14003,11 @@ tk.Entry(eew_ctrl_frame, textvariable=eew_key_var, width=32).pack(side="left", p
 
 
 
-tk.Label(eew_ctrl_frame, text="?𤾸?嚗?, bg=THEME["bg_card"]).pack(side="left", padx=2)
+tk.Label(eew_ctrl_frame, text="城市：", bg=THEME["bg_card"]).pack(side="left", padx=2)
 
 eew_city_var = tk.StringVar(value="")
 
-_TW_CITIES = ["(?芸??菜葫)", "?粹?撣?, "?啣?撣?, "?啣?撣?, "獢�?撣?, "?啁姘撣?, "?啁姘蝮?, "?埈?蝮?, "?唬葉撣?, "敶啣?蝮?, "?埈?蝮?, "?脫?蝮?, "?厩儔撣?, "?厩儔蝮?, "?啣?撣?, "擃㗛?撣?, "撅𤩺𨭬蝮?, "摰𡏭嵰蝮?, "?梯𤧣蝮?, "?唳𨭬蝮?, "瞉擧?蝮?, "?煾?蝮?, "???蝮?]
+_TW_CITIES = ["(自動偵測)", "基隆市", "台北市", "新北市", "桃園市", "新竹市", "新竹縣", "苗栗縣", "台中市", "彰化縣", "南投縣", "雲林縣", "嘉義市", "嘉義縣", "台南市", "高雄市", "屏東縣", "宜蘭縣", "花蓮縣", "台東縣", "澎湖縣", "金門縣", "連江縣"]
 
 eew_city_combo = ttk.Combobox(eew_ctrl_frame, textvariable=eew_city_var, values=_TW_CITIES, width=10, state="readonly")
 
@@ -14020,13 +14017,13 @@ eew_city_combo.pack(side="left", padx=2)
 
 eew_auto_city_var = tk.StringVar(value="")
 
-tk.Label(eew_ctrl_frame, text=" (?嗵征?芸??菜葫) ", font=THEME["font_s"], bg=THEME["bg_card"], fg="#64748B").pack(side="left")
+tk.Label(eew_ctrl_frame, text=" (留空自動偵測) ", font=THEME["font_s"], bg=THEME["bg_card"], fg="#64748B").pack(side="left")
 
 tk.Label(eew_ctrl_frame, textvariable=eew_auto_city_var, font=THEME["font_s"], bg=THEME["bg_card"], fg="#3B82F6").pack(side="left", padx=(0,4))
 
 
 
-# 蝚砌?銵諹身摰?
+# 第二行設定
 
 eew_ctrl_frame2 = tk.Frame(tab_eew, bg=THEME["bg_card"])
 
@@ -14034,13 +14031,13 @@ eew_ctrl_frame2.pack(fill="x", padx=16, pady=2)
 
 
 
-tk.Label(eew_ctrl_frame2, text="?�漲?�瑼鳴?", bg=THEME["bg_card"]).pack(side="left", padx=2)
+tk.Label(eew_ctrl_frame2, text="震度門檻：", bg=THEME["bg_card"]).pack(side="left", padx=2)
 
 eew_threshold_var = tk.StringVar(value="3")
 
 # We can use a Combobox for common values
 
-eew_threshold_combo = ttk.Combobox(eew_ctrl_frame2, textvariable=eew_threshold_var, values=["1", "2", "3", "4", "5撘?, "5撘?, "6撘?, "6撘?, "7"], width=5)
+eew_threshold_combo = ttk.Combobox(eew_ctrl_frame2, textvariable=eew_threshold_var, values=["1", "2", "3", "4", "5弱", "5強", "6弱", "6強", "7"], width=5)
 
 eew_threshold_combo.pack(side="left", padx=2)
 
@@ -14070,7 +14067,7 @@ def _apply_cwa_ui():
 
         new_city = (eew_city_var.get() or "").strip()
 
-        if new_city == "(?芸??菜葫)":
+        if new_city == "(自動偵測)":
 
             CWA_LOCAL_CITY = ""
 
@@ -14086,11 +14083,11 @@ def _apply_cwa_ui():
 
             # Map the displayed labels to what backend expects if needed, 
 
-            # but _int_val handles both "5撘? and "5-". 
+            # but _int_val handles both "5弱" and "5-". 
 
             # However, for consistency with Web UI, let's map them to the 5-/5+ format.
 
-            mapping = {"5撘?: "5-", "5撘?: "5+", "6撘?: "6-", "6撘?: "6+"}
+            mapping = {"5弱": "5-", "5強": "5+", "6弱": "6-", "6強": "6+"}
 
             CWA_INTENSITY_THRESHOLD = mapping.get(new_thresh, new_thresh)
 
@@ -14106,7 +14103,7 @@ def _apply_cwa_ui():
 
         
 
-        messagebox.showinfo("EEW", f"撌脫凒?啗身摰䨵n?毺鍂嚗㝯CWA_ENABLED}\n?𤾸?嚗㝯CWA_LOCAL_CITY or '(?芸?)'}\n?�瑼鳴?{CWA_INTENSITY_THRESHOLD}\nKey嚗㝯CWA_API_KEY[:4]}***")
+        messagebox.showinfo("EEW", f"已更新設定\n啟用：{CWA_ENABLED}\n城市：{CWA_LOCAL_CITY or '(自動)'}\n門檻：{CWA_INTENSITY_THRESHOLD}\nKey：{CWA_API_KEY[:4]}***")
 
     except Exception as e:
 
@@ -14114,7 +14111,7 @@ def _apply_cwa_ui():
 
 
 
-tk.Button(eew_ctrl_frame, text="憟㛖鍂", command=_apply_cwa_ui, bg="#3B82F6", fg="white", relief="flat").pack(side="left", padx=12)
+tk.Button(eew_ctrl_frame, text="套用", command=_apply_cwa_ui, bg="#3B82F6", fg="white", relief="flat").pack(side="left", padx=12)
 
 
 
@@ -14132,9 +14129,9 @@ def _test_cwa_alarm():
 
 
 
-tk.Button(eew_act_frame, text="[?氓 皜祈岫霅血𥼚?單?", command=_test_cwa_alarm, bg="#F59E0B", padx=8, relief="flat").pack(side="left", padx=(0,8))
+tk.Button(eew_act_frame, text="[♪] 測試警報音效", command=_test_cwa_alarm, bg="#F59E0B", padx=8, relief="flat").pack(side="left", padx=(0,8))
 
-tk.Button(eew_act_frame, text="[?蒸 蝡见朖瑼Ｘ䰻 CWA", command=lambda: threading.Thread(target=_cwa_poll_once, args=(True,), daemon=True).start(), bg="#10B981", relief="flat", padx=8).pack(side="left")
+tk.Button(eew_act_frame, text="[↻] 立即檢查 CWA", command=lambda: threading.Thread(target=_cwa_poll_once, args=(True,), daemon=True).start(), bg="#10B981", relief="flat", padx=8).pack(side="left")
 
 
 
@@ -14172,9 +14169,9 @@ def _update_eew_ui_loop():
 
         else:
 
-            if eew_city_var.get() != "(?芸??菜葫)":
+            if eew_city_var.get() != "(自動偵測)":
 
-                eew_city_var.set("(?芸??菜葫)")
+                eew_city_var.set("(自動偵測)")
 
         
 
@@ -14198,23 +14195,23 @@ def _update_eew_ui_loop():
 
                     eew_city_var.set(city)
 
-                    eew_auto_city_var.set(f" [撌脣�皜砌蒂憟㛖鍂: {city}]")
+                    eew_auto_city_var.set(f" [已偵測並套用: {city}]")
 
                     _save_cwa_conf()
 
                 else:
 
-                    eew_auto_city_var.set(" [?菜葫銝滚�?琿??𤾸?]")
+                    eew_auto_city_var.set(" [偵測不到具體城市]")
 
             except Exception as e:
 
-                eew_auto_city_var.set(f" [?菜葫憭望?: {e}]")
+                eew_auto_city_var.set(f" [偵測失敗: {e}]")
 
         
 
-        # Only update if currently set to "(?芸??菜葫)"
+        # Only update if currently set to "(自動偵測)"
 
-        if not CWA_LOCAL_CITY and eew_city_var.get() == "(?芸??菜葫)":
+        if not CWA_LOCAL_CITY and eew_city_var.get() == "(自動偵測)":
 
             if not hasattr(_update_eew_ui_loop, "_polling_city"):
 
@@ -14230,7 +14227,7 @@ def _update_eew_ui_loop():
 
         # Reverse mapping for threshold display
 
-        rev_mapping = {"5-": "5撘?, "5+": "5撘?, "6-": "6撘?, "6+": "6撘?}
+        rev_mapping = {"5-": "5弱", "5+": "5強", "6-": "6弱", "6+": "6強"}
 
         thresh_display = rev_mapping.get(CWA_INTENSITY_THRESHOLD, CWA_INTENSITY_THRESHOLD)
 
@@ -14240,7 +14237,7 @@ def _update_eew_ui_loop():
 
         
 
-        status = f"頛芾岷嚗㝯'?毺鍂' if CWA_ENABLED else '?𦦵鍂'}嚚𨅯誨?哨?{'?毺鍂' if CWA_BROADCAST_ENABLED else '?𣈯𨺗'}嚚𨅯?撣�?{CWA_LOCAL_CITY or '(?芸??菜葫)'}嚚𣈯?瑼鳴?{thresh_display}嚚𨀣? {CWA_POLL_SEC} 蝘?
+        status = f"輪詢：{'啟用' if CWA_ENABLED else '停用'}｜廣播：{'啟用' if CWA_BROADCAST_ENABLED else '靜音'}｜城市：{CWA_LOCAL_CITY or '(自動偵測)'}｜門檻：{thresh_display}｜每 {CWA_POLL_SEC} 秒"
 
         eew_status_var.set(status)
 
@@ -14260,13 +14257,13 @@ def _update_eew_ui_loop():
 
             d = CWA_LAST_DATA
 
-            txt = f"[{d.get('time')}] {d.get('location')} 閬𤩺芋{d.get('mag')} 瘛勗漲{d.get('depth')}km\n{d.get('title')}"
+            txt = f"[{d.get('time')}] {d.get('location')} 規模{d.get('mag')} 深度{d.get('depth')}km\n{d.get('title')}"
 
             eew_info_text.config(fg="black")
 
         else:
 
-            txt = "(撠𡁶�?�?啣𧑐?�???..)"
+            txt = "(尚無最新地震資料...)"
 
             eew_info_text.config(fg="gray")
 
@@ -14304,9 +14301,9 @@ if not CWA_API_KEY:
 
 eew_key_var.set(CWA_API_KEY)
 
-eew_city_var.set(CWA_LOCAL_CITY if CWA_LOCAL_CITY else "(?芸??菜葫)")
+eew_city_var.set(CWA_LOCAL_CITY if CWA_LOCAL_CITY else "(自動偵測)")
 
-rev_mapping = {"5-": "5撘?, "5+": "5撘?, "6-": "6撘?, "6+": "6撘?}
+rev_mapping = {"5-": "5弱", "5+": "5強", "6-": "6弱", "6+": "6強"}
 
 eew_threshold_var.set(rev_mapping.get(CWA_INTENSITY_THRESHOLD, CWA_INTENSITY_THRESHOLD))
 
@@ -14328,9 +14325,9 @@ setting_panel.pack(fill="x", padx=0, pady=(0, 16))
 
 
 
-tk.Label(setting_panel, text=" 閮剖?隤噼?嚗?, font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=0, column=0, padx=(16,0), pady=16, sticky="w")
+tk.Label(setting_panel, text=" 設定語言：", font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=0, column=0, padx=(16,0), pady=16, sticky="w")
 
-lang_label_var = tk.StringVar(value="?芸??菜葫 (Auto)")
+lang_label_var = tk.StringVar(value="自動偵測 (Auto)")
 
 lang_combo = ttk.Combobox(setting_panel, textvariable=lang_label_var,
 
@@ -14340,9 +14337,9 @@ lang_combo.grid(row=0, column=1, padx=6, pady=16)
 
 
 
-tk.Label(setting_panel, text="儭??批ê̌嚗?, font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=0, column=2, padx=(24,0), pady=16, sticky="w")
+tk.Label(setting_panel, text="️ 性別：", font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=0, column=2, padx=(24,0), pady=16, sticky="w")
 
-gender_label_var = tk.StringVar(value="憟唾�")
+gender_label_var = tk.StringVar(value="女聲")
 
 gender_combo = ttk.Combobox(setting_panel, textvariable=gender_label_var,
 
@@ -14391,11 +14388,11 @@ gender_combo.bind("<<ComboboxSelected>>", update_voice)
 
 
 
-# 隤鮋�?
+# 語速
 
-# 隤鮋�?
+# 語速
 
-tk.Label(setting_panel, text=" 隤鮋��?", font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=0, column=4, padx=(24,0), pady=16, sticky="w")
+tk.Label(setting_panel, text=" 語速：", font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=0, column=4, padx=(24,0), pady=16, sticky="w")
 
 
 
@@ -14407,7 +14404,7 @@ rate_frame.grid(row=0, column=5, padx=6, pady=16, sticky="w")
 
 
 
-tk.Label(rate_frame, text="??, font=THEME["font_s"], fg="#666", bg=THEME["bg_card"]).pack(side="left", padx=(0,2))
+tk.Label(rate_frame, text="慢", font=THEME["font_s"], fg="#666", bg=THEME["bg_card"]).pack(side="left", padx=(0,2))
 
 
 
@@ -14415,7 +14412,7 @@ rate_scale = tk.Scale(rate_frame, from_=-50, to=50, orient="horizontal", length=
 
                       showvalue=False, bg=THEME["bg_card"], highlightthickness=0,
 
-                      command=lambda v: handle_msg(f"SetRate:{int(float(v))}%", ("?祆?",)))
+                      command=lambda v: handle_msg(f"SetRate:{int(float(v))}%", ("本機",)))
 
 rate_scale.set(int(voice_rate.replace("%","") if isinstance(voice_rate, str) else voice_rate))
 
@@ -14423,7 +14420,7 @@ rate_scale.pack(side="left")
 
 
 
-tk.Label(rate_frame, text="敹?, font=THEME["font_s"], fg="#666", bg=THEME["bg_card"]).pack(side="left", padx=(2,0))
+tk.Label(rate_frame, text="快", font=THEME["font_s"], fg="#666", bg=THEME["bg_card"]).pack(side="left", padx=(2,0))
 
 
 
@@ -14462,33 +14459,33 @@ rate_scale.configure(command=lambda v: (_on_rate_change(v), None))
 
 
 
-# 敹急㭘?脤𨺗?�? / ?𣈯𨺗
+# 快捷聲音切換 / 靜音
 
-# 敹急㭘?脤𨺗?�? / ?𣈯𨺗
+# 快捷聲音切換 / 靜音
 
 quick_panel = tk.Frame(setting_panel, bg=THEME["bg_card"])
 
 quick_panel.grid(row=0, column=7, padx=(24,16), pady=16, sticky="e")
 
-tk.Button(quick_panel, text="憟唾�", command=lambda: handle_msg("Girl", ("?祆?",)), bg="#F3F4F6", relief="flat", font=THEME["font_s"]).pack(side="left", padx=2)
+tk.Button(quick_panel, text="女聲", command=lambda: handle_msg("Girl", ("本機",)), bg="#F3F4F6", relief="flat", font=THEME["font_s"]).pack(side="left", padx=2)
 
-tk.Button(quick_panel, text="?瑁�", command=lambda: handle_msg("Boy", ("?祆?",)),  bg="#F3F4F6", relief="flat", font=THEME["font_s"]).pack(side="left", padx=2)
+tk.Button(quick_panel, text="男聲", command=lambda: handle_msg("Boy", ("本機",)),  bg="#F3F4F6", relief="flat", font=THEME["font_s"]).pack(side="left", padx=2)
 
-tk.Button(quick_panel, text="?𣈯𨺗", command=lambda: handle_msg("Mute", ("?祆?",)),  bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="left", padx=2)
+tk.Button(quick_panel, text="靜音", command=lambda: handle_msg("Mute", ("本機",)),  bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="left", padx=2)
 
-tk.Button(quick_panel, text="閫?膄?𣈯𨺗", command=lambda: handle_msg("Unmute", ("?祆?",)), bg="#D1FAE5", relief="flat", font=THEME["font_s"]).pack(side="left", padx=2)
+tk.Button(quick_panel, text="解除靜音", command=lambda: handle_msg("Unmute", ("本機",)), bg="#D1FAE5", relief="flat", font=THEME["font_s"]).pack(side="left", padx=2)
 
 
 
-# ?喲?
+# 音量
 
-# ?喲?
+# 音量
 
 volume_panel = tk.Frame(tab_main, bg=THEME["bg_card"], highlightbackground=THEME["border"], highlightthickness=1)
 
 volume_panel.pack(fill="x", padx=0, pady=(0, 10))
 
-volume_label = tk.Label(volume_panel, text=f"?喲?嚗㝯STATE['volume']}%", font=THEME["font_bold"], bg=THEME["bg_card"])
+volume_label = tk.Label(volume_panel, text=f"音量：{STATE['volume']}%", font=THEME["font_bold"], bg=THEME["bg_card"])
 
 volume_label.pack(side="left", padx=16, pady=10)
 
@@ -14502,15 +14499,15 @@ volume_scale.set(STATE["volume"])
 
 volume_scale.pack(side="left", padx=8, pady=4)
 
-tk.Button(volume_panel, text="嚗?", command=lambda: handle_msg("VolDown", ("?祆?",)), bg="#F3F4F6", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(volume_panel, text="－5", command=lambda: handle_msg("VolDown", ("本機",)), bg="#F3F4F6", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
-tk.Button(volume_panel, text="嚗?", command=lambda: handle_msg("VolUp", ("?祆?",)),   bg="#F3F4F6", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(volume_panel, text="＋5", command=lambda: handle_msg("VolUp", ("本機",)),   bg="#F3F4F6", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
 
 
-# ?剜𦆮/閮𦠜�??
+# 播放/訊息列
 
-# ?剜𦆮/閮𦠜�??
+# 播放/訊息列
 
 play_panel = tk.Frame(tab_main, bg=THEME["bg_card"], highlightbackground=THEME["border"], highlightthickness=1)
 play_panel.pack(fill="x", padx=0, pady=(0, 0)) # Remove bottom padding to join with preview
@@ -14526,7 +14523,7 @@ play_panel_extra.pack(fill="x", padx=0, pady=(0, 10))
 # [NEW] Translation Preview Frame (Hidden by default, defined early for layout)
 # Removed trans_preview_frame definition from here as it is moved up
 
-tk.Label(trans_preview_frame, text="?? 蝧餉陌?鞱汗嚗?, font=THEME["font_bold"], bg="#EFF6FF", fg="#1E40AF").pack(side="top", anchor="w", padx=16, pady=(8,2))
+tk.Label(trans_preview_frame, text="🌐 翻譯預覽：", font=THEME["font_bold"], bg="#EFF6FF", fg="#1E40AF").pack(side="top", anchor="w", padx=16, pady=(8,2))
 trans_preview_text = tk.Text(trans_preview_frame, height=2, font=THEME["font_main"], bg="#F0F9FF", relief="solid", bd=1)
 trans_preview_text.pack(fill="x", padx=16, pady=4)
 trans_preview_text.config(state="disabled")
@@ -14539,16 +14536,16 @@ def _gui_play_trans():
     if txt:
         threading.Thread(target=handle_msg, args=(txt, ("GUI",)), daemon=True).start()
 
-tk.Button(trans_btn_row, text="?? ?剜𦆮甇斤蕃霅?, command=_gui_play_trans, bg="#3B82F6", fg="white", relief="flat", font=THEME["font_s"]).pack(side="right", padx=4)
-tk.Button(trans_btn_row, text="???𣈯??鞱汗", command=lambda: trans_preview_frame.pack_forget(), bg="#94A3B8", fg="white", relief="flat", font=THEME["font_s"]).pack(side="right", padx=4)
+tk.Button(trans_btn_row, text="🚀 播放此翻譯", command=_gui_play_trans, bg="#3B82F6", fg="white", relief="flat", font=THEME["font_s"]).pack(side="right", padx=4)
+tk.Button(trans_btn_row, text="✖ 關閉預覽", command=lambda: trans_preview_frame.pack_forget(), bg="#94A3B8", fg="white", relief="flat", font=THEME["font_s"]).pack(side="right", padx=4)
 
 
 
-# ?�??剖𥼚
+# 文字播報
 
-# ?�??剖𥼚
+# 文字播報
 
-tk.Label(play_panel, text="儭??�??剖𥼚嚗?, font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=0, column=0, padx=(16,4), pady=6, sticky="w")
+tk.Label(play_panel, text="️ 文字播報：", font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=0, column=0, padx=(16,4), pady=6, sticky="w")
 
 
 
@@ -14562,14 +14559,14 @@ def _submit_tts():
 
     if txt:
 
-        threading.Thread(target=handle_msg, args=(txt, ("?祆?",)), daemon=True).start()
+        threading.Thread(target=handle_msg, args=(txt, ("本機",)), daemon=True).start()
 
-tk.Button(play_panel, text="?剖𥼚", command=_submit_tts, bg="#D1FAE5", relief="flat", font=THEME["font_s"]).grid(row=0, column=2, padx=6, pady=6)
+tk.Button(play_panel, text="播報", command=_submit_tts, bg="#D1FAE5", relief="flat", font=THEME["font_s"]).grid(row=0, column=2, padx=6, pady=6)
 
 def _gui_translate():
     q = speak_entry.get().strip()
     if not q:
-        messagebox.showinfo("?箸�蝧餉陌", "隢见?頛詨�閬�蕃霅舐??�?")
+        messagebox.showinfo("智慧翻譯", "請先輸入要翻譯的文字")
         return
     
     target_label = lang_label_var.get()
@@ -14578,7 +14575,7 @@ def _gui_translate():
     # Show status
     trans_preview_text.config(state="normal")
     trans_preview_text.delete("1.0", tk.END)
-    trans_preview_text.insert("1.0", "??蝧餉陌銝?..")
+    trans_preview_text.insert("1.0", "⌛ 翻譯中...")
     trans_preview_text.config(state="disabled")
     trans_preview_text.config(state="disabled")
     # Pack it right AFTER the main play panel, and BEFORE the extra panel
@@ -14620,10 +14617,10 @@ def _gui_translate():
             if out:
                 ui_safe(lambda: _update_trans_ui(out))
             else:
-                ui_safe(lambda: messagebox.showerror("蝧餉陌憭望?", "?⊥??脣?蝧餉陌蝯鞉?"))
+                ui_safe(lambda: messagebox.showerror("翻譯失敗", "無法獲得翻譯結果"))
                 ui_safe(lambda: trans_preview_frame.pack_forget())
         except Exception as e:
-            ui_safe(lambda: messagebox.showerror("蝧餉陌?航炊", str(e)))
+            ui_safe(lambda: messagebox.showerror("翻譯錯誤", str(e)))
             ui_safe(lambda: trans_preview_frame.pack_forget())
 
     threading.Thread(target=_task, daemon=True).start()
@@ -14642,13 +14639,13 @@ def _gui_play_trans():
         gender = gender_label2code.get(gender_label_var.get(), "female")
         threading.Thread(target=handle_msg, args=(txt, ("GUI",)), daemon=True).start()
 
-tk.Button(play_panel, text="?箸�蝧餉陌", command=_gui_translate, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).grid(row=0, column=3, padx=6, pady=6)
+tk.Button(play_panel, text="智慧翻譯", command=_gui_translate, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).grid(row=0, column=3, padx=6, pady=6)
 
 
 
-# ?啗??剖𥼚
+# 台語播報
 
-tk.Label(play_panel_extra, text="儭??啗??剖𥼚嚗?, font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=0, column=0, padx=(16,4), pady=6, sticky="w")
+tk.Label(play_panel_extra, text="️ 台語播報：", font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=0, column=0, padx=(16,4), pady=6, sticky="w")
 
 taigi_entry = tk.Entry(play_panel_extra, width=43, font=THEME["font_main"], relief="solid", bd=1)
 
@@ -14660,33 +14657,33 @@ def _submit_taigi():
 
     if txt:
 
-        threading.Thread(target=handle_msg, args=(f"PlayTaigi:{txt}", ("?祆?",)), daemon=True).start()
+        threading.Thread(target=handle_msg, args=(f"PlayTaigi:{txt}", ("本機",)), daemon=True).start()
 
-tk.Button(play_panel_extra, text="?剖蝱隤?, command=_submit_taigi, bg="#FDE68A", relief="flat", font=THEME["font_s"]).grid(row=0, column=2, padx=6, pady=6)
+tk.Button(play_panel_extra, text="播台語", command=_submit_taigi, bg="#FDE68A", relief="flat", font=THEME["font_s"]).grid(row=0, column=2, padx=6, pady=6)
 
 
 
-# ?刻攟撟閗???
+# 全螢幕訊息
 
-# ?刻攟撟閗???
+# 全螢幕訊息
 
-tk.Label(play_panel_extra, text="儭??刻攟撟閗??荔?", font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=1, column=0, padx=(16,4), pady=6, sticky="w")
+tk.Label(play_panel_extra, text="️ 全螢幕訊息：", font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=1, column=0, padx=(16,4), pady=6, sticky="w")
 
 fs_entry = tk.Entry(play_panel_extra, width=43, font=THEME["font_main"], relief="solid", bd=1)
 
 fs_entry.grid(row=1, column=1, padx=6, pady=6, sticky="w")
 
-tk.Button(play_panel_extra, text="憿舐內嚗𧢲偘??, command=lambda: handle_msg(f"ShowMsg:{fs_entry.get().strip()}", ("?祆?",)), bg="#FEF3C7", relief="flat", font=THEME["font_s"]).grid(row=1, column=2, padx=6, pady=6)
+tk.Button(play_panel_extra, text="顯示＋播報", command=lambda: handle_msg(f"ShowMsg:{fs_entry.get().strip()}", ("本機",)), bg="#FEF3C7", relief="flat", font=THEME["font_s"]).grid(row=1, column=2, padx=6, pady=6)
 
-tk.Button(play_panel_extra, text="?芷＊蝷?,   command=lambda: handle_msg(f"SilentMsg:{fs_entry.get().strip()}", ("?祆?",)), bg="#FEF3C7", relief="flat", font=THEME["font_s"]).grid(row=1, column=3, padx=6, pady=6)
+tk.Button(play_panel_extra, text="只顯示",   command=lambda: handle_msg(f"SilentMsg:{fs_entry.get().strip()}", ("本機",)), bg="#FEF3C7", relief="flat", font=THEME["font_s"]).grid(row=1, column=3, padx=6, pady=6)
 
 
-
-# YouTube/MP3
 
 # YouTube/MP3
 
-tk.Label(play_panel, text=" YouTube ??MP3 ???嚗?, font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=3, column=0, padx=(16,4), pady=6, sticky="w")
+# YouTube/MP3
+
+tk.Label(play_panel, text=" YouTube 或 MP3 連結：", font=THEME["font_bold"], bg=THEME["bg_card"]).grid(row=3, column=0, padx=(16,4), pady=6, sticky="w")
 
 yt_entry = tk.Entry(play_panel, width=43, font=THEME["font_main"], relief="solid", bd=1)
 
@@ -14702,39 +14699,39 @@ def _submit_media():
 
     if ("youtube.com/watch" in url) or ("youtu.be/" in url) or ("/shorts/" in url):
 
-        threading.Thread(target=handle_msg, args=(url, ("?祆?",)), daemon=True).start()
+        threading.Thread(target=handle_msg, args=(url, ("本機",)), daemon=True).start()
 
     else:
 
-        threading.Thread(target=handle_msg, args=(f"PlayMP3:{url}", ("?祆?",)), daemon=True).start()
+        threading.Thread(target=handle_msg, args=(f"PlayMP3:{url}", ("本機",)), daemon=True).start()
 
-tk.Button(play_panel, text="?剜𦆮???", command=_submit_media, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).grid(row=3, column=2, padx=6, pady=12)
+tk.Button(play_panel, text="播放連結", command=_submit_media, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).grid(row=3, column=2, padx=6, pady=12)
 
 
 
 def _choose_mp3_local():
 
-    p = filedialog.askopenfilename(title="?豢? MP3", filetypes=[("MP3", "*.mp3")])
+    p = filedialog.askopenfilename(title="選擇 MP3", filetypes=[("MP3", "*.mp3")])
 
     if p:
 
-        threading.Thread(target=handle_msg, args=(f"PlayMP3:{p}", ("?祆?",)), daemon=True).start()
+        threading.Thread(target=handle_msg, args=(f"PlayMP3:{p}", ("本機",)), daemon=True).start()
 
-tk.Button(play_panel, text="?剜𦆮?祆? MP3", command=_choose_mp3_local, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).grid(row=3, column=3, padx=6, pady=12)
+tk.Button(play_panel, text="播放本機 MP3", command=_choose_mp3_local, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).grid(row=3, column=3, padx=6, pady=12)
 
 
 
-# ?脣漲?�偘?曄???
+# 進度與播放狀態
 
-# ?脣漲?�偘?曄???
+# 進度與播放狀態
 
-# 摮貊?蝡舀綉??
+# 學生端控制
 student_ctrl_panel = tk.Frame(tab_main, bg=THEME["bg_card"], highlightbackground=THEME["border"], highlightthickness=1)
 student_ctrl_panel.pack(fill="x", padx=0, pady=(0, 10))
 
-tk.Label(student_ctrl_panel, text=" 摮貊?蝡舀綉?塚?", font=THEME["font_bold"], bg=THEME["bg_card"]).pack(side="left", padx=(16,4), pady=10)
+tk.Label(student_ctrl_panel, text=" 學生端控制：", font=THEME["font_bold"], bg=THEME["bg_card"]).pack(side="left", padx=(16,4), pady=10)
 
-tk.Label(student_ctrl_panel, text="?格? ID (蝛??券�)嚗?, font=THEME["font_s"], bg=THEME["bg_card"]).pack(side="left", padx=2)
+tk.Label(student_ctrl_panel, text="目標 ID (空=全部)：", font=THEME["font_s"], bg=THEME["bg_card"]).pack(side="left", padx=2)
 student_target_var = tk.StringVar()
 tk.Entry(student_ctrl_panel, textvariable=student_target_var, width=12, font=THEME["font_main"]).pack(side="left", padx=2)
 
@@ -14769,7 +14766,7 @@ def _send_student_cmd_ui(cmd_key, args=""):
                     ws.send(f"CMD|{real_cmd}|{args}")
                 except: pass
         
-        text_area_insert(f"撌脣誨?剜?隞?({cmd_key}) ?單??匧飛??, "Student")
+        text_area_insert(f"已廣播指令 ({cmd_key}) 至所有學生", "Student")
         
     else:
         # Targeted
@@ -14778,21 +14775,21 @@ def _send_student_cmd_ui(cmd_key, args=""):
         # unless we track it. But if WS fails, UDP broadcast with Target ID filter is valid too!
         success = send_student_udp_command("255.255.255.255", 12345, real_cmd, args, client_id=target)
         if success:
-             text_area_insert(f"撌脩䔄?�?隞?({cmd_key}) ??{target}", "Student")
+             text_area_insert(f"已發送指令 ({cmd_key}) 至 {target}", "Student")
         else:
-             text_area_insert(f"?潮��?隞?({cmd_key}) ??{target} 憭望?", "Student")
+             text_area_insert(f"發送指令 ({cmd_key}) 至 {target} 失敗", "Student")
 
-tk.Button(student_ctrl_panel, text="?輸�", command=lambda: _send_student_cmd_ui("Ring"), bg="#FDE68A", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
-tk.Button(student_ctrl_panel, text="?见?蝬脤?", command=lambda: _send_student_cmd_ui("OpenURL", "https://google.com"), bg="#DBEAFE", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
-tk.Button(student_ctrl_panel, text="?齿鰵?笔?", command=lambda: _send_student_cmd_ui("Reboot"), bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
-tk.Button(student_ctrl_panel, text="?𨀣?", command=lambda: _send_student_cmd_ui("Shutdown"), bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(student_ctrl_panel, text="響鈴", command=lambda: _send_student_cmd_ui("Ring"), bg="#FDE68A", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(student_ctrl_panel, text="開啟網頁", command=lambda: _send_student_cmd_ui("OpenURL", "https://google.com"), bg="#DBEAFE", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(student_ctrl_panel, text="重新啟動", command=lambda: _send_student_cmd_ui("Reboot"), bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(student_ctrl_panel, text="關機", command=lambda: _send_student_cmd_ui("Shutdown"), bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
 
 progress_row = tk.Frame(tab_main, bg=THEME["bg_root"])
 
 progress_row.pack(fill="x", padx=0, pady=(4, 2))
 
-playing_label = tk.Label(progress_row, text="??蝑匧??剜𦆮銝凌�?, bg=THEME["bg_root"], font=THEME["font_s"], fg=THEME["fg_sub"])
+playing_label = tk.Label(progress_row, text="⏳ 等待播放中…", bg=THEME["bg_root"], font=THEME["font_s"], fg=THEME["fg_sub"])
 
 playing_label.pack(side="left", padx=(2, 10))
 
@@ -14814,9 +14811,9 @@ progress_text_label.pack(side="left")
 
 
 
-# 蝜潮𤓖?典?憛?
+# 繼電器區塊
 
-# 蝜潮𤓖?典?憛?
+# 繼電器區塊
 
 relay_frame = tk.Frame(tab_main, bg=THEME["bg_card"], highlightbackground=THEME["border"], highlightthickness=1)
 
@@ -14828,7 +14825,7 @@ tk.Label(
 
     relay_frame,
 
-    text=" USB 蝜潮𤓖?剁?CH340/CH341嚗?,
+    text=" USB 繼電器（CH340/CH341）",
 
     font=THEME["font_bold"],
 
@@ -14838,7 +14835,7 @@ tk.Label(
 
 
 
-relay_status_var = tk.StringVar(value="Port嚗尠�䈑?Cmd嚗尠�䈑?Result嚗尠�䈑?Err嚗尠�?)
+relay_status_var = tk.StringVar(value="Port：—｜Cmd：—｜Result：—｜Err：—")
 
 relay_status_label = tk.Label(relay_frame, textvariable=relay_status_var, bg=THEME["bg_card"], fg=THEME["fg_sub"], font=THEME["font_s"])
 
@@ -14846,9 +14843,9 @@ relay_status_label.grid(row=0, column=1, padx=12, pady=(10, 2), sticky="w", colu
 
 
 
-# 撌血�?批�?Ｘ踎嚗�???COM + ?厰?嚗?
+# 左側控制面板（手動 COM + 按鈕）
 
-# 撌血�?批�?Ｘ踎嚗�???COM + ?厰?嚗?
+# 左側控制面板（手動 COM + 按鈕）
 
 relay_ctrl_frame = tk.Frame(relay_frame, bg=THEME["bg_card"])
 
@@ -14860,7 +14857,7 @@ tk.Label(
 
     relay_ctrl_frame,
 
-    text="雿輻鍂 COM嚗?,
+    text="使用 COM：",
 
     font=THEME["font_s"],
 
@@ -14896,7 +14893,7 @@ relay_port_combo.grid(row=0, column=1, padx=(0, 6), pady=(0, 2), sticky="w")
 
 def apply_manual_relay_port():
 
-    """撠�??厰�?�? COM 摮䀹??鞱身銝衣??喳??具�?""
+    """將下拉選擇的 COM 存成預設並立即套用。"""
 
     global RELAY_PORT
 
@@ -14904,7 +14901,7 @@ def apply_manual_relay_port():
 
     if not port:
 
-        messagebox.showwarning("USB 蝜潮𤓖??, "隢见??豢?閬�蝙?函? COM ?𨬭�?)
+        messagebox.showwarning("USB 繼電器", "請先選擇要使用的 COM 埠。")
 
         return
 
@@ -14928,11 +14925,11 @@ def apply_manual_relay_port():
 
             _relay_set("last_error", "")
 
-        messagebox.showinfo("USB 蝜潮𤓖??, f"撌脫?摰𡁶匱?餃膥雿輻鍂 {port}\n銝𧢲活?笔?銋�??芸?憟㛖鍂??)
+        messagebox.showinfo("USB 繼電器", f"已指定繼電器使用 {port}\n下次啟動也會自動套用。")
 
     except Exception as e:
 
-        messagebox.showerror("USB 蝜潮𤓖??, f"撖怠� relay_port.txt 憭望?嚗䨵n{e}")
+        messagebox.showerror("USB 繼電器", f"寫入 relay_port.txt 失敗：\n{e}")
 
 
 
@@ -14940,7 +14937,7 @@ tk.Button(
 
     relay_ctrl_frame,
 
-    text="憟㛖鍂",
+    text="套用",
 
     command=apply_manual_relay_port,
 
@@ -14974,7 +14971,7 @@ def _relay_off():
 
 
 
-# ?批�嚗𡁏?憿諹??厰??䔶?銵?
+# 控制：標題與按鈕同一行
 
 relay_ctrl_row = tk.Frame(relay_ctrl_frame, bg=THEME["bg_card"])
 
@@ -14986,7 +14983,7 @@ tk.Label(
 
     relay_ctrl_row,
 
-    text="?批�嚗?,
+    text="控制：",
 
     font=THEME["font_s"],
 
@@ -15000,7 +14997,7 @@ tk.Button(
 
     relay_ctrl_row,
 
-    text="?齿鰵?�?",
+    text="重新掃描",
 
     command=_relay_rescan,
 
@@ -15058,7 +15055,7 @@ relay_auto_var = tk.BooleanVar(value=RELAY_AUTO_ON)
 relay_auto_var.trace("w", _on_relay_auto_change)
 tk.Checkbutton(
     relay_ctrl_row,
-    text="?芸??笔??游之璈?,
+    text="自動啟動擴大機",
     variable=relay_auto_var,
     bg=THEME["bg_card"],
     font=THEME["font_s"]
@@ -15077,7 +15074,7 @@ chime_var.trace("w", _on_chime_change)
 
 tk.Checkbutton(
     relay_ctrl_row,
-    text="?剜𦆮?鞟內??,
+    text="播放提示音",
     variable=chime_var,
     bg=THEME["bg_card"],
     font=THEME["font_s"]
@@ -15086,7 +15083,7 @@ tk.Checkbutton(
 
 
 
-# ?喳� COM ?�?蝯鞉?
+# 右側 COM 掃描結果
 
 relay_ports_frame = tk.Frame(relay_frame, bg=THEME["bg_card"])
 
@@ -15132,7 +15129,7 @@ def refresh_relay_ui():
 
     try:
 
-        # ?湔鰵?喳�?�?蝯鞉??�?
+        # 更新右側掃描結果文字
 
         relay_ports_text.delete("1.0", tk.END)
 
@@ -15140,23 +15137,23 @@ def refresh_relay_ui():
 
 
 
-        # ?湔鰵銝𦠜䲮?�?见?
+        # 更新上方狀態列
 
         relay_status_var.set(
 
-            f"Port嚗㝯RELAY_INFO.get('port') or '??}嚚?
+            f"Port：{RELAY_INFO.get('port') or '—'}｜"
 
-            f"Cmd嚗㝯RELAY_INFO.get('last_cmd') or '??}嚚?
+            f"Cmd：{RELAY_INFO.get('last_cmd') or '—'}｜"
 
-            f"Result嚗㝯RELAY_INFO.get('last_result') or '??}嚚?
+            f"Result：{RELAY_INFO.get('last_result') or '—'}｜"
 
-            f"Err嚗㝯RELAY_INFO.get('last_error') or '??}"
+            f"Err：{RELAY_INFO.get('last_error') or '—'}"
 
         )
 
 
 
-        # ?湔鰵銝𧢲? COM 皜�鱓
+        # 更新下拉 COM 清單
 
         items = RELAY_INFO.get("ports") or []
 
@@ -15186,7 +15183,7 @@ def refresh_relay_ui():
 
 
 
-# 銝餅綉?啗??臬?
+# 主控台訊息區
 
 console_frame = tk.Frame(tab_main, bg=THEME["bg_root"])
 
@@ -15214,25 +15211,25 @@ flush_text_buffer_if_any()
 
 
 
-# ---- Tab 2:  隤脰” ----
+# ---- Tab 2:  課表 ----
 
-# ---- Tab 2:  閬誩?隞餃? ----
+# ---- Tab 2:  規律任務 ----
 
-tab_tt = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_tt, text=" 閬誩?隞餃?")
+tab_tt = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_tt, text=" 規律任務")
 
 tt_top = tk.Frame(tab_tt, bg=THEME["bg_card"], highlightbackground=THEME["border"], highlightthickness=1)
 
 tt_top.pack(fill="x", padx=0, pady=(0, 16))
 
-timetable_status_var = tk.StringVar(value=" 閬誩?隞餃?嚗尠�?)
+timetable_status_var = tk.StringVar(value=" 規律任務：—")
 
 tk.Label(tt_top, textvariable=timetable_status_var, font=THEME["font_bold"], bg=THEME["bg_card"]).pack(side="left", padx=(16,10), pady=12)
 
-timetable_next_var = tk.StringVar(value=" 銝衤?甈∴???)
+timetable_next_var = tk.StringVar(value=" 下一次：—")
 
 tk.Label(tt_top, textvariable=timetable_next_var, font=THEME["font_s"], bg=THEME["bg_card"], fg=THEME["fg_sub"]).pack(side="left", padx=(6,10))
 
-timetable_path_var = tk.StringVar(value=f"頝臬?嚗㝯TIMETABLE_PATH}")
+timetable_path_var = tk.StringVar(value=f"路徑：{TIMETABLE_PATH}")
 
 tk.Label(tt_top, textvariable=timetable_path_var, font=THEME["font_s"], bg=THEME["bg_card"], fg=THEME["fg_sub"]).pack(side="left", padx=(6,10))
 
@@ -15240,25 +15237,25 @@ tk.Label(tt_top, textvariable=timetable_path_var, font=THEME["font_s"], bg=THEME
 
 def _tt_enable():
 
-    handle_msg("ScheduleEnable", ("?祆?",))
+    handle_msg("ScheduleEnable", ("本機",))
 
 def _tt_disable():
 
-    handle_msg("ScheduleDisable", ("?祆?",))
+    handle_msg("ScheduleDisable", ("本機",))
 
 def _tt_reload():
 
-    handle_msg("ScheduleReload", ("?祆?",))
+    handle_msg("ScheduleReload", ("本機",))
 
     _load_timetable_from_disk(); update_next_label()
 
 
 
-tk.Button(tt_top, text="?毺鍂",  command=_tt_enable,  bg="#D1FAE5", relief="flat", font=THEME["font_s"]).pack(side="right", padx=4)
+tk.Button(tt_top, text="啟用",  command=_tt_enable,  bg="#D1FAE5", relief="flat", font=THEME["font_s"]).pack(side="right", padx=4)
 
-tk.Button(tt_top, text="?𦦵鍂",  command=_tt_disable,  bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="right", padx=4)
+tk.Button(tt_top, text="停用",  command=_tt_disable,  bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="right", padx=4)
 
-tk.Button(tt_top, text="?齿鰵頛匧�", command=_tt_reload, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="right", padx=(4, 16))
+tk.Button(tt_top, text="重新載入", command=_tt_reload, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="right", padx=(4, 16))
 
 
 
@@ -15270,11 +15267,11 @@ tt_tree = ttk.Treeview(tt_mid, columns=columns, show="headings", height=10)
 
 tt_tree.heading("idx", text="#")
 
-tt_tree.heading("when", text="?�?嚗㇄OW/?交?嚗?)
+tt_tree.heading("when", text="時間（DOW/日期）")
 
-tt_tree.heading("action", text="?蓥?")
+tt_tree.heading("action", text="動作")
 
-tt_tree.heading("label", text="璅嗵惜")
+tt_tree.heading("label", text="標籤")
 
 tt_tree.column("idx", width=42, anchor="center")
 
@@ -15330,7 +15327,7 @@ def _tt_play_selected():
 
     if not sel:
 
-        messagebox.showinfo("隤脰”", "隢见??豢?銝�蝑�??剜𦆮")
+        messagebox.showinfo("課表", "請先選擇一筆再播放")
 
         return
 
@@ -15342,23 +15339,23 @@ def _tt_play_selected():
 
 tt_bottom = tk.Frame(tab_tt, bg=THEME["bg_root"]); tt_bottom.pack(fill="x", padx=0, pady=(0,16))
 
-tk.Button(tt_bottom, text="?剜𦆮?�??, command=_tt_play_selected, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(tt_bottom, text="播放所選", command=_tt_play_selected, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
-tk.Button(tt_bottom, text="?齿鰵?渡?", command=refresh_timetable_tree, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(tt_bottom, text="重新整理", command=refresh_timetable_tree, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
 
 
-# ---- Tab 3:  瑼娍?/銝𠰴� ----
+# ---- Tab 3:  檔案/上傳 ----
 
-# ---- Tab 3:  瑼娍?/銝𠰴� ----
+# ---- Tab 3:  檔案/上傳 ----
 
-tab_files = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_files, text=" 瑼娍?/銝𠰴�")
+tab_files = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_files, text=" 檔案/上傳")
 
 files_top = tk.Frame(tab_files, bg=THEME["bg_card"], highlightbackground=THEME["border"], highlightthickness=1)
 
 files_top.pack(fill="x", padx=0, pady=(0, 16))
 
-tk.Label(files_top, text=" 銝𠰴�?桅?嚗?, font=THEME["font_bold"], bg=THEME["bg_card"]).pack(side="left", padx=(16,0), pady=12)
+tk.Label(files_top, text=" 上傳目錄：", font=THEME["font_bold"], bg=THEME["bg_card"]).pack(side="left", padx=(16,0), pady=12)
 
 tk.Label(files_top, text=UPLOAD_DIR, font=("Consolas", 8), bg=THEME["bg_card"], fg=THEME["fg_sub"]).pack(side="left", padx=(6,10))
 
@@ -15382,11 +15379,11 @@ def _open_folder(path):
 
     except Exception as e:
 
-        messagebox.showerror("?见?鞈�?憭?, f"?⊥??见?嚗㝯e}")
+        messagebox.showerror("開啟資料夾", f"無法開啟：{e}")
 
 
 
-tk.Button(files_top, text="?见?鞈�?憭?, command=lambda:_open_folder(UPLOAD_DIR), bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="right", padx=(4, 16))
+tk.Button(files_top, text="開啟資料夾", command=lambda:_open_folder(UPLOAD_DIR), bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="right", padx=(4, 16))
 
 
 
@@ -15396,11 +15393,11 @@ fcols = ("name","size","mtime")
 
 files_tree = ttk.Treeview(files_mid, columns=fcols, show="headings", height=10)
 
-files_tree.heading("name", text="瑼𥪜?")
+files_tree.heading("name", text="檔名")
 
-files_tree.heading("size", text="憭批?")
+files_tree.heading("size", text="大小")
 
-files_tree.heading("mtime", text="靽格㺿?�?")
+files_tree.heading("mtime", text="修改時間")
 
 files_tree.column("name", width=392, anchor="w")
 
@@ -15462,7 +15459,7 @@ def refresh_files():
 
     except Exception as e:
 
-        messagebox.showerror("瑼娍??𡑒”", str(e))
+        messagebox.showerror("檔案列表", str(e))
 
 
 
@@ -15472,7 +15469,7 @@ def _play_selected_file():
 
     if not sel:
 
-        messagebox.showinfo("?剜𦆮", "隢见??豢?銝�擐?MP3")
+        messagebox.showinfo("播放", "請先選擇一首 MP3")
 
         return
 
@@ -15480,7 +15477,7 @@ def _play_selected_file():
 
     path = os.path.join(UPLOAD_DIR, name)
 
-    threading.Thread(target=handle_msg, args=(f"PlayMP3:{path}", ("?祆?",)), daemon=True).start()
+    threading.Thread(target=handle_msg, args=(f"PlayMP3:{path}", ("本機",)), daemon=True).start()
 
 
 
@@ -15490,7 +15487,7 @@ def _delete_selected_file():
 
     if not sel:
 
-        messagebox.showinfo("?芷膄", "隢见??豢?銝�擐?MP3")
+        messagebox.showinfo("刪除", "請先選擇一首 MP3")
 
         return
 
@@ -15498,7 +15495,7 @@ def _delete_selected_file():
 
     path = os.path.join(UPLOAD_DIR, name)
 
-    if not messagebox.askyesno("?芷膄", f"蝣箏??芷膄瑼娍?嚗㝯name}嚗?):
+    if not messagebox.askyesno("刪除", f"確定刪除檔案：{name}？"):
 
         return
 
@@ -15510,13 +15507,13 @@ def _delete_selected_file():
 
     except Exception as e:
 
-        messagebox.showerror("?芷膄憭望?", str(e))
+        messagebox.showerror("刪除失敗", str(e))
 
 
 
 def _upload_from_local():
 
-    ps = filedialog.askopenfilenames(title="?豢? MP3 銝𠰴�", filetypes=[("MP3", "*.mp3")])
+    ps = filedialog.askopenfilenames(title="選擇 MP3 上傳", filetypes=[("MP3", "*.mp3")])
 
     for p in ps or []:
 
@@ -15530,7 +15527,7 @@ def _upload_from_local():
 
         except Exception as e:
 
-            messagebox.showerror("銝𠰴�憭望?", f"{os.path.basename(p)}嚗㝯e}")
+            messagebox.showerror("上傳失敗", f"{os.path.basename(p)}：{e}")
 
     refresh_files()
 
@@ -15538,29 +15535,29 @@ def _upload_from_local():
 
 files_bottom = tk.Frame(tab_files, bg=THEME["bg_root"]); files_bottom.pack(fill="x", padx=0, pady=(0,16))
 
-tk.Button(files_bottom, text="?齿鰵?渡?", command=refresh_files, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(files_bottom, text="重新整理", command=refresh_files, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
-tk.Button(files_bottom, text="?剜𦆮?�??, command=_play_selected_file, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(files_bottom, text="播放所選", command=_play_selected_file, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
-tk.Button(files_bottom, text="?芷膄?�??, command=_delete_selected_file, bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(files_bottom, text="刪除所選", command=_delete_selected_file, bg="#FEE2E2", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
-tk.Button(files_bottom, text="敺墧𧋦璈蠘?鋆賢� uploads", command=_upload_from_local, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(files_bottom, text="從本機複製到 uploads", command=_upload_from_local, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
 
 
-# ---- Tab 4:  ?芾??垍? ----
+# ---- Tab 4:  自訂排程 ----
 
-# ---- Tab 4:  ?芾??垍? ----
+# ---- Tab 4:  自訂排程 ----
 
-tab_sched = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_sched, text=" ?芾??垍?")
+tab_sched = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_sched, text=" 自訂排程")
 
 sched_top = tk.Frame(tab_sched, bg=THEME["bg_card"], highlightbackground=THEME["border"], highlightthickness=1)
 
 sched_top.pack(fill="x", padx=0, pady=(0, 16))
 
-sched_status_var = tk.StringVar(value="銝衤?甈∴???)
+sched_status_var = tk.StringVar(value="下一次：—")
 
-tk.Label(sched_top, text="?芾??垍?嚗?schedules.json嚗?, font=THEME["font_bold"], bg=THEME["bg_card"]).pack(side="left", padx=(16,12), pady=12)
+tk.Label(sched_top, text="自訂排程（/schedules.json）", font=THEME["font_bold"], bg=THEME["bg_card"]).pack(side="left", padx=(16,12), pady=12)
 
 tk.Label(sched_top, textvariable=sched_status_var, font=THEME["font_s"], bg=THEME["bg_card"], fg=THEME["fg_sub"]).pack(side="left")
 
@@ -15578,7 +15575,7 @@ def _open_sched_file():
 
 
 
-tk.Button(sched_top, text="?见?鞈�?憭?, command=_open_sched_file, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="right", padx=(4, 16))
+tk.Button(sched_top, text="開啟資料夾", command=_open_sched_file, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="right", padx=(4, 16))
 
 
 
@@ -15592,21 +15589,21 @@ for c, t, w, a in [
 
     ("id","ID",84,"w"),
 
-    ("title","璅䠷?",154,"w"),
+    ("title","標題",154,"w"),
 
-    ("time","?�?",70,"center"),
+    ("time","時間",70,"center"),
 
-    ("days","憭拇彍",70,"w"),
+    ("days","天數",70,"w"),
 
-    ("jitter","?�榆(s)",56,"e"),
+    ("jitter","允差(s)",56,"e"),
 
-    ("type","憿𧼮?",56,"center"),
+    ("type","類型",56,"center"),
 
-    ("payload","?批捆",252,"w"),
+    ("payload","內容",252,"w"),
 
-    ("enabled","?毺鍂",42,"center"),
+    ("enabled","啟用",42,"center"),
 
-    ("date","?交?",84,"center"),
+    ("date","日期",84,"center"),
 
 ]:
 
@@ -15652,7 +15649,7 @@ def refresh_sched_tree():
 
         ))
 
-    # ?湔鰵?䔶?銝�甈～�滨???
+    # 更新「下一次」狀態
 
     st = _compute_next_schedule_status(items)
 
@@ -15660,11 +15657,11 @@ def refresh_sched_tree():
 
         nxt = st["next"]
 
-        sched_status_var.set(f"銝衤?甈∴?{nxt.get('at')}嚚画nxt.get('title') or nxt.get('payload')}")
+        sched_status_var.set(f"下一次：{nxt.get('at')}｜{nxt.get('title') or nxt.get('payload')}")
 
     else:
 
-        sched_status_var.set("銝衤?甈∴???)
+        sched_status_var.set("下一次：—")
 
 
 
@@ -15674,7 +15671,7 @@ def _sched_play_selected():
 
     if not sel:
 
-        messagebox.showinfo("?垍?", "隢见??豢?銝�蝑�?閫貊䔄")
+        messagebox.showinfo("排程", "請先選擇一筆再觸發")
 
         return
 
@@ -15686,29 +15683,29 @@ def _sched_play_selected():
 
     if typ == "sendmp3":
 
-        handle_msg(f"PlayMP3:{payload}", ("?祆?",))
+        handle_msg(f"PlayMP3:{payload}", ("本機",))
 
     else:
 
-        handle_msg(str(payload), ("?祆?",))
+        handle_msg(str(payload), ("本機",))
 
 
 
 sched_bottom = tk.Frame(tab_sched, bg=THEME["bg_root"]); sched_bottom.pack(fill="x", padx=0, pady=(0,16))
 
-tk.Button(sched_bottom, text="?齿鰵?渡?", command=refresh_sched_tree, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(sched_bottom, text="重新整理", command=refresh_sched_tree, bg="#F1F5F9", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
-tk.Button(sched_bottom, text="蝡见朖閫貊䔄?�??, command=_sched_play_selected, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
+tk.Button(sched_bottom, text="立即觸發所選", command=_sched_play_selected, bg="#DBEAFE", relief="flat", font=THEME["font_s"]).pack(side="left", padx=4)
 
 
 
-# ---- Tab 5: 閮剖? ----
-tab_settings = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_settings, text=" 閮剖?")
+# ---- Tab 5: 設定 ----
+tab_settings = tk.Frame(notebook, bg=THEME["bg_root"]); notebook.add(tab_settings, text=" 設定")
 
 settings_frame = tk.Frame(tab_settings, bg=THEME["bg_card"], highlightbackground=THEME["border"], highlightthickness=1)
 settings_frame.pack(fill="x", padx=16, pady=16)
 
-tk.Label(settings_frame, text="蝟餌絞閮剖?", font=THEME["font_bold"], bg=THEME["bg_card"]).pack(anchor="w", padx=16, pady=(12, 6))
+tk.Label(settings_frame, text="系統設定", font=THEME["font_bold"], bg=THEME["bg_card"]).pack(anchor="w", padx=16, pady=(12, 6))
 
 # AI Generation Toggle
 ai_gen_var = tk.BooleanVar(value=config.get("use_ai_generation", True))
@@ -15722,14 +15719,14 @@ def _on_ai_gen_change(*args):
 
 ai_gen_var.trace_add("write", _on_ai_gen_change)
 
-chk_ai = tk.Checkbutton(settings_frame, text="?毺鍂 AI 撱?偘蝔輻???(?�摰㕑? Ollama)", variable=ai_gen_var, bg=THEME["bg_card"], font=THEME["font_main"])
+chk_ai = tk.Checkbutton(settings_frame, text="啟用 AI 廣播稿生成 (需安裝 Ollama)", variable=ai_gen_var, bg=THEME["bg_card"], font=THEME["font_main"])
 chk_ai.pack(anchor="w", padx=16, pady=(0, 12))
 
-tk.Label(settings_frame, text="隤芣?嚗朞𥅾?𦦵鍂甇文??踝?撠�??�摰㕑? Ollama 璅∪?嚗屸�?�??滨蔭?餉�雿輻鍂??, font=THEME["font_s"], fg=THEME["fg_sub"], bg=THEME["bg_card"]).pack(anchor="w", padx=36, pady=(0, 16))
+tk.Label(settings_frame, text="說明：若停用此功能，將不需安裝 Ollama 模型，適合低配置電腦使用。", font=THEME["font_s"], fg=THEME["fg_sub"], bg=THEME["bg_card"]).pack(anchor="w", padx=36, pady=(0, 16))
 
 
 
-# ===== ?勗??望??湔鰵 =====
+# ===== 共同週期更新 =====
 
 def _tick_every_5s():
 
@@ -15737,7 +15734,7 @@ def _tick_every_5s():
 
         update_next_label()
 
-        # ?湔鰵?芾??垍??䔶?銝�甈～�?
+        # 更新自訂排程「下一次」
 
         items = _load_schedules_from_disk()
 
@@ -15747,11 +15744,11 @@ def _tick_every_5s():
 
             nxt = st["next"]
 
-            sched_status_var.set(f"銝衤?甈∴?{nxt.get('at')}嚚画nxt.get('title') or nxt.get('payload')}")
+            sched_status_var.set(f"下一次：{nxt.get('at')}｜{nxt.get('title') or nxt.get('payload')}")
 
         else:
 
-            sched_status_var.set("銝衤?甈∴???)
+            sched_status_var.set("下一次：—")
 
     finally:
 
@@ -15782,7 +15779,7 @@ def controller_api_clients_v2():
         # students_clients structure: {id: {ip, port, group, mac, hostname, last_seen}}
         client_list = {}
         online_count = 0
-        now_ts = get_now()
+        now_ts = datetime.now()
         
         with students_lock:
             for cid, info in students_clients.items():
@@ -15858,20 +15855,20 @@ def controller_api_send_v2():
 def run_web_server():
     print("\n" + "[*] " + "="*50)
     print(">>> [SYSTEM] Translation Engine Updated (V2) <<<")
-    print(">>> 蝟餌絞?笔??𣂼? (?�𧋦 V1214.01-FINAL) <<<")
-    print(f">>> 蝬脤?隞钅𢒰嚗冴ttp://localhost:{HTTP_PORT} <<<")
+    print(">>> 系統啟動成功 (版本 V1214.01-FINAL) <<<")
+    print(f">>> 網頁介面：http://localhost:{HTTP_PORT} <<<")
     print("[*] " + "="*50 + "\n")
     
     if DISABLE_WEB:
-        text_area_insert(" DISABLE_WEB=True嚗峕𧊋?笔? Flask??, "Web")
+        text_area_insert(" DISABLE_WEB=True，未啟動 Flask。", "Web")
         return
     host = "0.0.0.0"; port = HTTP_PORT
 
     try:
-        text_area_insert(f" Flask 隡箸??典???(?舀螱 WebSocket)嚗冴ttp://{host}:{port}", "Web")
+        text_area_insert(f" Flask 伺服器啟動 (支援 WebSocket)：http://{host}:{port}", "Web")
         app.run(host=host, port=port, threaded=True, use_reloader=False)
     except Exception as e:
-        text_area_insert(f"??Web 隡箸??典??訫仃?梹?{e}", "Web")
+        text_area_insert(f"❌ Web 伺服器啟動失敗：{e}", "Web")
 
 # Startup Sequence
 def keep_render_alive():
@@ -15923,10 +15920,10 @@ try:
     if '_auto_watch_schedules' in globals(): root.after(30000, _auto_watch_schedules)
     if '_apply_button_hover' in globals(): root.after(400, lambda: _apply_button_hover(root))
 
-    # [NEW] Auto-Repair Edge TTS  (?鮋獈憛䂿? ??銝滚嘑銵?pip install 隞仿�?漤??㗇??∩?)
+    # [NEW] Auto-Repair Edge TTS  (非阻塞版 — 不執行 pip install 以避免關閉時卡住)
     def _check_and_repair_edge_tts():
         try:
-            print(">>> [Self-Check] 甇?銁瑼Ｘ䰻 Edge TTS 撘閙????...")
+            print(">>> [Self-Check] 正在檢查 Edge TTS 引擎連線...")
             STATE["edge_tts_status"] = "Testing..."
             import edge_tts, asyncio, os, tempfile
             async def _test():
@@ -15948,17 +15945,17 @@ try:
             loop.close()
 
             if ok:
-                print(">>> [Self-Check] Edge TTS ?衤?甇?虜 (OK)")
+                print(">>> [Self-Check] Edge TTS 運作正常 (OK)")
                 STATE["edge_tts_status"] = "OK"
             else:
                 raise Exception("Output file empty or missing")
 
         except Exception as e:
-            print(f">>> [Self-Check] Edge TTS ?啣虜 ({e})")
+            print(f">>> [Self-Check] Edge TTS 異常 ({e})")
             STATE["edge_tts_status"] = f"Error: {str(e)[:30]}"
-            # 銝滩䌊??pip install ???踹?蝔见??𣈯??�? subprocess ?餃??𣬚�瘜閧??喳?甇?
-            # ?仿?閬�耨敺抵??见??瑁?嚗䮝ip install --upgrade edge-tts
-            print(">>> [Self-Check] ?仿?靽桀儔 Edge TTS 隢𧢲??訫嘑銵? pip install --upgrade edge-tts")
+            # 不自動 pip install — 避免程式關閉時因 subprocess 阻塞而無法立即停止
+            # 若需要修復請手動執行：pip install --upgrade edge-tts
+            print(">>> [Self-Check] 若需修復 Edge TTS 請手動執行: pip install --upgrade edge-tts")
 
     # Async check in background to not block GUI
     threading.Thread(target=_check_and_repair_edge_tts, daemon=True).start()
@@ -15974,7 +15971,7 @@ try:
     if not DISABLE_UDP:
         threading.Thread(target=udp_listener, daemon=True).start()
     else:
-        text_area_insert(" UDP ?交𤣰撌脣??剁?DISABLE_UDP=True嚗?, "UDP")
+        text_area_insert(" UDP 接收已停用（DISABLE_UDP=True）", "UDP")
 
     # Student Threads
     if 'student_udp_listener' in globals(): threading.Thread(target=student_udp_listener, daemon=True).start()
@@ -16026,7 +16023,7 @@ try:
             last_missing_log = 0
             
             while self.running:
-                # ?? Skip if disabled
+                # 🆕 Skip if disabled
                 if self.port in ("DISABLED", "NONE", "", None):
                     time.sleep(5)
                     continue
@@ -16074,7 +16071,7 @@ try:
                             self.triggered = True
                             print(f"[Fire] ALARM TRIGGERED! ({self.pin} High)")
                             # Trigger Alarm Sequence
-                            threading.Thread(target=handle_msg, args=("ShowMsg:?鞟�?質郎?晞�穃�皜砍�?怎�閮𡃏?嚗屸�脰?蝺𦠜�亙誨?哨?", ("System", "Fire")), daemon=True).start()
+                            threading.Thread(target=handle_msg, args=("ShowMsg:【火災警報】偵測到火災訊號，進行緊急廣播！", ("System", "Fire")), daemon=True).start()
                             threading.Thread(target=handle_msg, args=("PlayMP3:justEarthquakeAlarm.mp3", ("System", "Fire")), daemon=True).start()
                     else:
                         if self.triggered:
@@ -16092,35 +16089,24 @@ try:
                     time.sleep(5)
 
     # Start Fire Monitor
-    if FIRE_ALARM_PORT and FIRE_ALARM_PORT != "COM5" and not IS_HEADLESS:
+    if FIRE_ALARM_PORT and FIRE_ALARM_PORT != "COM5":
         _fire_monitor = FireAlarmMonitor(FIRE_ALARM_PORT, FIRE_ALARM_PIN)
         _fire_monitor.start()
     else:
-        print("[Fire] Monitor disabled (No valid port or Headless)")
+        print("[Fire] Monitor disabled (No valid port configured)")
 
-    # [CRITICAL] Conditional Mainloop for Render/Headless
-    if IS_HEADLESS:
-        print("\n>>> [SYSTEM] Entering Headless Mode (Render/Server) <<<")
-        print(f">>> [SYSTEM] Web server running on 0.0.0.0:{HTTP_PORT} <<<")
-        # Run web server in MAIN THREAD to prevent exit
-        run_web_server()
-    else:
-        # Desktop Mode: Background Web Server + Main GUI Loop
-        threading.Thread(target=run_web_server, daemon=True).start()
-        if 'start_ngrok' in globals(): root.after(2500, start_ngrok)
-        root.mainloop()
-
+    # Mainloop
+    root.mainloop()
 except Exception as e:
     import traceback
     err_msg = "".join(traceback.format_exception(None, e, e.__traceback__))
     print(f"Startup Error: {e}")
     try:
         with open("startup_error.log", "w", encoding="utf-8") as f:
-            f.write(f"Timestamp: {get_now()}\n")
+            f.write(f"Timestamp: {datetime.now()}\n")
             f.write(err_msg)
     except: pass
-    if not IS_HEADLESS:
-        input("Press Enter to exit...")
+    input("Press Enter to exit...")
 
 # =======================================
 # == [Keep-Alive] Render Sleep Prevention ==
@@ -16138,19 +16124,19 @@ def keep_alive_pinger():
         url = os.environ.get("RENDER_EXTERNAL_URL") or STATE.get("render_url")
 
     if not url:
-        print("?? [Keep-Alive] No RENDER_EXTERNAL_URL found, pinger aborted.")
+        print("⚠️ [Keep-Alive] No RENDER_EXTERNAL_URL found, pinger aborted.")
         return
         
-    print(f"?? [Keep-Alive] Pinger started for: {url}")
+    print(f"🚀 [Keep-Alive] Pinger started for: {url}")
     while True:
         try:
             time.sleep(600)  # Ping every 10 minutes (Render timeout is 15 mins)
             response = requests.get(url, timeout=15)
-            print(f"??[Keep-Alive] Self-ping successful: {response.status_code}")
+            print(f"✅ [Keep-Alive] Self-ping successful: {response.status_code}")
         except Exception as e:
-            print(f"?? [Keep-Alive] Self-ping failed: {e}")
+            print(f"⚠️ [Keep-Alive] Self-ping failed: {e}")
 
 # Only start if running on Render
-if IS_RENDER:
+if os.environ.get('RENDER') or os.environ.get('RENDER_EXTERNAL_URL'):
     import threading
     threading.Thread(target=keep_alive_pinger, daemon=True).start()
